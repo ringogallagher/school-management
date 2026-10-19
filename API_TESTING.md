@@ -239,12 +239,12 @@ curl  http://localhost:8080/api/attendance/me           -H "Authorization: Beare
 ```bash
 curl -X POST http://localhost:8080/api/grades \
   -H "Authorization: Bearer $TEACHER" -H "Content-Type: application/json" \
-  -d '{"student_id": 1, "subject_id": 1, "marks": 92, "term": "Q1"}'
+  -d '{"student_id": 1, "subject_id": 1, "marks": 5, "term": "Q1"}'
 
 curl -X PUT http://localhost:8080/api/grades/1 \
-  -H "Authorization: Bearer $TEACHER" -H "Content-Type: application/json" -d '{"marks": 90}'
+  -H "Authorization: Bearer $TEACHER" -H "Content-Type: application/json" -d '{"marks": 4}'
 
-curl "http://localhost:8080/api/grades/student/1?term=Q1"          -H "Authorization: Bearer $PARENT"   # grades + subject averages + GPA
+curl "http://localhost:8080/api/grades/student/1?term=Q1"          -H "Authorization: Bearer $PARENT"   # grades + subject averages + final marks + overall average
 curl  http://localhost:8080/api/grades/me                          -H "Authorization: Bearer $STUDENT"
 curl "http://localhost:8080/api/grades/class/1/subject/1?term=Q1"  -H "Authorization: Bearer $TEACHER"
 ```

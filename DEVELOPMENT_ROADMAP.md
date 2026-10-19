@@ -103,7 +103,7 @@ This document outlines the development plan for the School Management System.
 - [x] Update / delete grade (admin, or the teacher who recorded it)
 - [x] Get student grades (optionally by term)
 - [x] Get class grades by subject
-- [x] Calculate GPA (4.0 scale, credit-weighted) and per-subject averages
+- [x] Five-point marks (1-5) and per-subject average + final mark (replaced the earlier credit-weighted GPA in Phase 6)
 - [x] Grade report (`/api/grades/student/{id}`, `/api/grades/me`)
 - [x] Parent + student notification when a grade is posted
 
@@ -147,8 +147,8 @@ services as the JSON API, so every validation and access rule is shared.
   - [x] Enter grades form (gradebook per class/subject/term, inline edit & delete of own marks)
   - [x] Attendance statistics per class and date range
   - [x] View timetable (week grid, today highlighted) and today's lessons on the dashboard
-- [x] Student portal: dashboard (GPA, attendance %, today's lessons, news), grades, attendance, timetable
-- [x] Parent portal: card per child (GPA, attendance), child's grades by term and attendance history
+- [x] Student portal: dashboard (average mark, attendance %, today's lessons), weekly diary, marks, attendance, timetable
+- [x] Parent portal: card per child (average mark, attendance), child's diary, marks by term and attendance history
 - [x] Notifications page for everyone, unread badge in the navigation (polled every 30 s)
 - [x] Account page: change password
 
@@ -359,3 +359,10 @@ Before going live:
 
 This roadmap is flexible and will be updated as the project progresses.
 Last updated: 2024-01-15
+
+
+## Later phases (summary)
+
+- **Phase 6 (2026-10-13):** five-point marks (migration 000003), school news and public home page (migration 000004), weekly diary and new top-bar interface.
+- **Phase 7 (2026-10-13):** CSV export, reporting views (migration 000005), backup/restore scripts, HTTP integration tests on in-memory and PostgreSQL back ends, browser E2E test, load-test tool, requirements/database/testing/operations documents, user manuals, OpenAPI.
+- **Phase 8 (2026-10-19):** final verification (all tests with the race detector, migrations up/down/up, PostgreSQL integration tests, load test with 1 016 pupils, backup/restore round trip, browser check of every role), news preview fix, documentation clean-up, thesis text in `docs/thesis/`.

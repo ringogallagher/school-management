@@ -11,3 +11,4 @@
 | [user-manual-student-parent.md](user-manual-student-parent.md) | Manual for students and parents |
 | [testing.md](testing.md) | Test strategy, how to run every kind of test, performance and usability test plans, result templates |
 | [operations.md](operations.md) | Deployment, configuration, backup and restore |
+| [thesis/main.pdf](thesis/main.pdf) | Thesis text (LaTeX sources in `thesis/`; build with `cd docs/thesis && latexmk -pdf main.tex`) |

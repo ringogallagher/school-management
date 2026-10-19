@@ -1,0 +1,83 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}
+\usepackage[a4paper,left=3.1cm,right=3.1cm,top=3.4cm,bottom=3.2cm]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+
+\setstretch{1.12}
+\setlength{\parindent}{1.4em}
+\setlength{\parskip}{0.2em}
+\setlist{itemsep=1pt,topsep=3pt}
+\captionsetup{labelfont=bf,font=small,skip=6pt}
+\renewcommand{\arraystretch}{1.18}
+
+% Chapter/section styling close to the reference thesis
+\titleformat{\chapter}[block]{\normalfont\huge\bfseries}{\thechapter}{0.6em}{}
+\titlespacing*{\chapter}{0pt}{12pt}{26pt}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{0.6em}{}
+
+\definecolor{codebg}{gray}{0.96}
+\lstset{basicstyle=\ttfamily\footnotesize,backgroundcolor=\color{codebg},frame=single,
+  rulecolor=\color{black!25},breaklines=true,columns=fullflexible,keepspaces=true,
+  showstringspaces=false,xleftmargin=0.4em,xrightmargin=0.4em}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\ph}[1]{\textcolor{red!70!black}{[#1]}}
+
+\begin{document}
+
+% ------------------------------------------------------------------ title page
+\begin{titlepage}
+\centering
+\vspace*{1.2cm}
+{\LARGE\bfseries UNIVERSITY OF DEBRECEN\\[4pt] FACULTY OF INFORMATICS\par}
+\vspace{4.2cm}
+{\Large\bfseries THESIS\par}
+\vspace{1.0cm}
+{\Large Development of a Web-Based\\[3pt] School Management and\\[3pt] Electronic Diary System\par}
+\vfill
+\begin{minipage}[t]{0.46\textwidth}\raggedright
+Supervisor:\\ Dr. V\'agner Anik\'o Szilvia
+\end{minipage}\hfill
+\begin{minipage}[t]{0.40\textwidth}\raggedright
+Candidate:\\ Mikhail Zviagintsev\\ Computer Science
+\end{minipage}
+\vspace{2.2cm}
+
+{\Large DEBRECEN\\ 2026\par}
+\end{titlepage}
+
+\renewcommand{\contentsname}{Table of Contents}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\tableofcontents
+\clearpage
+
+\input{ch1_intro}
+\input{ch2_methods}
+\input{ch3_requirements}
+\input{ch4_design}
+\input{ch5_implementation}
+\input{ch6_testing}
+\input{ch7_conclusion}
+\input{backmatter}
+
+\end{document}

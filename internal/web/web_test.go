@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -48,5 +49,20 @@ func TestSameOrigin(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "http://school.test/", nil))
 	if rec.Code != http.StatusOK {
 		t.Errorf("GET should pass, got %d", rec.Code)
+	}
+}
+
+func TestAssetURLsAreVersioned(t *testing.T) {
+	if len(assetVersion) != 10 {
+		t.Fatalf("asset version should be a 10 character hash, got %q", assetVersion)
+	}
+	b, err := templateFS.ReadFile("templates/layout.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"/static/app.css?v={{assetVersion}}", "/static/htmx.min.js?v={{assetVersion}}"} {
+		if !strings.Contains(string(b), want) {
+			t.Errorf("layout must reference %s", want)
+		}
 	}
 }

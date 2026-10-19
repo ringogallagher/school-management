@@ -34,7 +34,7 @@ migrations/       000001 schema, 000002 constraints & indexes
 | `internal/services/access.go` | AccessControl: who may see/change which class or student |
 | `internal/services/user_service.go` | admin user management, bootstrap admin |
 | `internal/services/attendance_service.go` | attendance marking, reports, low-attendance warnings |
-| `internal/services/grade_service.go` | grades, averages, GPA |
+| `internal/services/grade_service.go` | five-point marks, averages, final marks |
 | `internal/services/timetable_service.go` | timetable with clash detection and teacher qualifications |
 | `internal/services/notification_service.go` | in-app notifications + optional e-mail copies |
 | `internal/services/reminder_service.go` | daily "attendance not marked" reminder job |
@@ -138,7 +138,7 @@ school-management/
 
 **Endpoints:**
 ```
-POST   /api/auth/register
+POST   /api/auth/register   (closed: returns 401; accounts are created by an administrator)
 POST   /api/auth/login
 GET    /api/auth/profile
 POST   /api/auth/change-password

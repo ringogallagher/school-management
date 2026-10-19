@@ -1,0 +1,80 @@
+\chapter{Domain model and methods}
+
+\section{The five-point scale}
+
+The system uses the five-point scale in the form familiar in Russian and Hungarian schools. A mark is a whole number: 5 is excellent, 4 good, 3 satisfactory, 2 poor and 1 very poor. Table~\ref{tab:scale} lists the verbal meaning and the colour used in the interface. The colours form a sequence from green to dark red so that a row of marks can be read as a pattern without reading the digits.
+
+\begin{table}[H]
+\centering
+\caption{The five-point scale and its presentation}
+\label{tab:scale}
+\begin{tabular}{@{}cll@{}}
+\toprule
+Mark & Meaning & Colour in the interface \\
+\midrule
+5 & excellent & green \\
+4 & good & light green \\
+3 & satisfactory & amber \\
+2 & poor & red \\
+1 & very poor & dark red \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two design decisions follow from using whole marks. A mark of 0, a mark above 5 and a fractional mark are all invalid input; they are rejected rather than rounded, because silently correcting a teacher's entry would change a decision the teacher made. Averages, by contrast, are fractional and are shown with two decimals; the whole-number \emph{final} mark is derived from them by an explicit rule (Section~\ref{sec:final}).
+
+\section{Subject averages and final marks}
+\label{sec:final}
+
+Let $m_1,\dots,m_n$ be the marks a pupil received in one subject, optionally restricted to one term. The subject average is the arithmetic mean
+\begin{equation}
+\bar m = \frac{1}{n}\sum_{i=1}^{n} m_i .
+\end{equation}
+The final subject mark rounds the average to the nearest whole mark, with halves rounding up, and keeps it inside the scale:
+\begin{equation}
+F(\bar m) = \min\bigl(5,\ \max\bigl(1,\ \lfloor \bar m + \tfrac12 \rfloor\bigr)\bigr),
+\qquad F = 0 \text{ when } n = 0 .
+\end{equation}
+Thus an average of 4.5 gives a final mark of 5, while 4.49 gives 4. A subject with no marks has no final mark; the value 0 stands for ``none'' and never appears as a mark that can be entered.
+
+The overall average of a pupil is the mean of \emph{all} marks, not the mean of the subject averages. A subject with many marks therefore weighs more than one with few. This is the simpler and more common reading of ``average mark'' for a pupil, and the interface labels it as such. The earlier credit-weighted grade-point average was removed together with the 0--100 scores; no field of the API refers to it any more.
+
+\section{Attendance percentage}
+
+Each pupil has one attendance record per class and day with one of four statuses: present, absent, late or excused. Let $P$, $L$, $E$ and $T$ be the numbers of present, late and excused days and of all recorded days in the period. The attendance percentage counts lateness as attendance and removes excused days from the base:
+\begin{equation}
+A = \frac{P + L}{T - E}\times 100 .
+\end{equation}
+When $T - E \le 0$ there is nothing to penalise and $A = 100$. The percentage is computed over a period (the last 30 days in the diary) and rounded to two decimals.
+
+A low-attendance warning is generated when $A$ falls below 75\,\% and at least five days have been recorded. The warning fires once, at the moment the percentage \emph{crosses} the threshold, so that recording one more absence for a pupil who is already below the threshold does not send another message.
+
+\section{Converting legacy scores}
+\label{sec:conversion}
+
+Databases created before the change contain scores from 0 to 100. The migration maps each score to a mark with the bands of Table~\ref{tab:conversion}, which are the conventional ones for a percentage-to-five-point conversion.
+
+\begin{table}[H]
+\centering
+\caption{Conversion of legacy 0--100 scores applied by migration 000003}
+\label{tab:conversion}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Legacy score & New mark \\
+\midrule
+90--100 & 5 \\
+75--89 & 4 \\
+60--74 & 3 \\
+40--59 & 2 \\
+below 40 & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The conversion loses information: two scores in one band become the same mark. The reverse migration therefore maps each mark back to the middle of its band (5 to 95, 4 to 82, 3 to 67, 2 to 50, 1 to 20) and is documented as lossy. A reversible conversion does not exist, and pretending otherwise would hide the loss.
+
+\section{Related systems and techniques}
+
+Electronic diaries are well established. Services such as dnevnik.ru present a weekly view in which lessons and marks appear together, and they combine it with news and messages. This project borrows that interaction model, namely the week as the main unit and the mark placed next to its lesson. The visual design, text and structure are original, and no branding or content of any existing service is reproduced.
+
+The implementation relies on a small number of well-documented techniques. Passwords are hashed with bcrypt \cite{bcrypt}. Sessions are signed JSON Web Tokens \cite{jwt}. State-changing browser requests are checked against the request origin as defence in depth against cross-site request forgery \cite{owaspcsrf}. Exported tables neutralise cells that a spreadsheet could interpret as formulas \cite{owaspcsv}. Database constraints enforce invariants that application code could otherwise bypass \cite{pgconstraints}. The browser interface uses HTML fragments returned by the server and swapped in by htmx \cite{htmx}, which keeps the application free of a separate front-end build and lets it work with JavaScript disabled for ordinary navigation and forms.

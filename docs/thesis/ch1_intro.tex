@@ -1,0 +1,45 @@
+\chapter{Introduction}
+
+\section{Motivation and context}
+
+A school produces a steady stream of small records: a mark given in a lesson, a pupil who was late, a room that changes for one day, a reminder about a parent meeting. Each record is trivial. Together they decide whether a pupil, a parent and a teacher share the same picture of how a term is going. On paper this picture lives in a class register, a pupil's diary and a notice board, and it is only as current as the last time somebody copied information from one to another.
+
+Electronic diaries address this problem by keeping one authoritative record and showing it in the form that each reader needs. In several countries they are everyday tools. Russian services such as dnevnik.ru popularised a simple layout: the pupil opens a week, sees each day's lessons in order, and sees the marks received in those lessons next to them. Hungarian schools, like Russian ones, grade on a scale from one to five, so a system built around that scale suits a school in either setting.
+
+My motivation was to build such a system as a complete piece of software engineering rather than as a collection of screens. A diary looks simple, but it combines persistent storage, access rules that depend on who is asking, arithmetic that must be explainable (what exactly is a subject mark?), scheduled work such as reminders, and an interface that parents will open on a phone. These concerns fit naturally into one project in which every design decision can be tested.
+
+The result is a web application for a single school. Administrators manage accounts, classes, subjects, the timetable and school news. Teachers record attendance and marks. Pupils and parents read a weekly diary, their marks and attendance. Visitors who are not signed in see a public home page with the latest school news.
+
+\section{Problem statement}
+
+The central difficulty of a school system is not storing data but deciding who may see and change which data, and presenting the result in a way that its readers trust. Three problems follow from this.
+
+First, \emph{access depends on relationships}, not only on roles. A teacher may record a mark for a pupil only if the pupil belongs to a class that the teacher teaches. A parent may read the records of their own children and nobody else's. A pupil may read only their own records. These rules are shared by several features, so scattering them across request handlers would invite inconsistencies.
+
+Second, \emph{the grading scale must be unambiguous}. The first version of the system stored marks as scores from 0 to 100 and derived a weighted grade-point average. That scheme did not match the way the intended users talk about marks. A pupil or parent expects a whole mark from 1 to 5, a subject mark that is an average rounded in a stated way, and a colour-coded presentation that can be read at a glance. Changing the scale also affects existing data, so it needs a migration with defined behaviour.
+
+Third, \emph{the first screen must be useful to everyone}. A school's most common communication is an announcement, and an administrator should be able to publish one without help. Placing a public news feed at the root of the site also changes the routing of the application: the role-specific start page has to move elsewhere, and the news text, which is written by a person, has to be displayed without ever being interpreted as markup.
+
+\section{Aim and objectives}
+
+The aim is to develop and evaluate a web-based school management system with a five-point marking scheme, a weekly electronic diary and a public school-news home page.
+
+The objectives are:
+\begin{itemize}
+  \item to design a relational data model with explicit integrity rules for accounts, classes, subjects, timetable, attendance, marks, notifications and news;
+  \item to centralise the relationship-based access rules in one component that is testable without an HTTP layer;
+  \item to replace the original 0--100 scoring with whole marks from 1 to 5, including validation, aggregation rules and a defined migration of existing data;
+  \item to build a server-rendered interface in the style of a school diary, with a weekly view that shows marks next to lessons and a layout that works on a phone;
+  \item to provide a public home page with news that administrators can publish, pin, edit and delete;
+  \item to evaluate the result with automated unit, integration and browser tests, a load test against the target performance requirement, and checks of the security mechanisms.
+\end{itemize}
+
+The evaluation asks whether the implemented rules hold under test, whether the system meets its response-time requirement on a school-sized data set, and what the evidence does not establish. Chapters~5 and~6 explain the implementation and the results.
+
+\section{Method and scope}
+
+The project follows an implementation-based method. Requirements (Chapter~3) determine the architecture (Chapter~4); the implementation (Chapter~5) is verified by tests at several levels (Chapter~6). The tests run against two interchangeable storage back ends: in-memory repositories for fast feedback, and PostgreSQL for the real system. The same HTTP scenarios are executed against both, so the tests exercise the production routes, middleware and handlers.
+
+The recorded results were produced on 19 October 2026. The application source and the documentation are available in the project repository \cite{repo}.
+
+The system is designed for one school. It is a web application served by a single process and a PostgreSQL database. Fee and payment tracking, native mobile applications, integration with external identity providers and any user study with real pupils and teachers are outside the scope of the delivered work. Where a limitation affects a result, it is stated at that point and collected in Section~\ref{sec:limits}.

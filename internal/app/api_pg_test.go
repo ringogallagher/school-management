@@ -4,18 +4,23 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/mzviagintsev/school-management/internal/db"
 	appMiddleware "github.com/mzviagintsev/school-management/internal/middleware"
+	"github.com/mzviagintsev/school-management/internal/models"
 	"github.com/mzviagintsev/school-management/internal/repository"
 	"github.com/mzviagintsev/school-management/internal/services"
 	"net/http/httptest"
 )
 
 // TestAPI_PostgreSQL runs the same scenarios as the in-memory test against a real database.
+// The database must be migrated; it may already contain data (the test creates its own administrator).
 //
 //	make migrate-up            # or apply migrations/*.up.sql
 //	TEST_DATABASE_URL=postgres://... go test -tags integration ./internal/app/
@@ -62,8 +67,18 @@ func TestAPI_PostgreSQL(t *testing.T) {
 		Access:        access,
 		LoginLimiter:  appMiddleware.NewRateLimiter(1000, time.Minute),
 	}
-	const adminEmail, adminPass = "it-admin@school.test", "it-admin-pass-1"
-	if err := d.Users.EnsureAdmin(context.Background(), adminEmail, adminPass); err != nil {
+	// A dedicated administrator with a unique e-mail, created directly in the repository, so the
+	// test also works on a database that already has an administrator (for example after cmd/seed).
+	adminEmail := fmt.Sprintf("it-admin-%d@school.test", time.Now().UnixNano())
+	const adminPass = "it-admin-pass-1"
+	hash, err := bcrypt.GenerateFromPassword([]byte(adminPass), bcrypt.MinCost)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := userRepo.Create(context.Background(), &models.User{
+		Email: adminEmail, PasswordHash: string(hash), FirstName: "IT", LastName: "Admin",
+		Role: models.RoleAdmin, IsActive: true,
+	}); err != nil {
 		t.Fatal(err)
 	}
 	h, err := NewRouter(d)

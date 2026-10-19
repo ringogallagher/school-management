@@ -103,6 +103,9 @@ func TestParagraphsAndSnippet(t *testing.T) {
 	if len([]rune(s)) > 51 || !strings.HasSuffix(s, "…") {
 		t.Errorf("snippet not shortened properly: %q", s)
 	}
+	if got := snippet("Dear parents,\n\nThe school year starts today.", 80); got != "Dear parents, The school year starts today." {
+		t.Errorf("snippet must continue past the first paragraph, got %q", got)
+	}
 	if got := snippet("short", 50); got != "short" {
 		t.Errorf("short text must stay intact, got %q", got)
 	}

@@ -1,0 +1,78 @@
+\chapter{Requirements and problem analysis}
+
+\section{Actors and intended workflows}
+
+The system has five kinds of actor. Table~\ref{tab:actors} summarises what each may do. The rules that decide ``own'' and ``linked'' are relationships stored in the database, not properties of the account itself, which is why the access component of Section~\ref{sec:access} needs repository access.
+
+\begin{table}[H]
+\centering
+\caption{Actors and their permissions}
+\label{tab:actors}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Actor & Permitted activity \\
+\midrule
+Guest & Read the public home page and individual news items; sign in. \\
+Student & Read own weekly diary, marks, attendance, timetable and notifications; export own reports. \\
+Parent & The same as a student, for each linked child. \\
+Teacher & Record attendance and marks for classes they teach (as homeroom teacher or through a timetable lesson); change or delete only marks they recorded; read class reports and statistics. \\
+Administrator & Manage users, classes, subjects, teachers' qualifications, parents' links, timetable, news and announcements; full read access to all reports. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A typical day follows the roles. In the morning a teacher opens the attendance sheet of the class, marks absences and saves. During the day the teacher presses a digit in the gradebook to give a mark; the pupil and the parents receive a notification. In the evening the pupil opens the diary for the week and sees the mark beside the lesson. At any time an administrator can publish an announcement that appears on the home page and, if sent as an announcement, in the notifications of the chosen roles.
+
+\section{Functional requirements}
+
+Table~\ref{tab:fr} lists the functional requirements together with the evidence that verifies each of them. Identifiers are used in the test names and in the documentation of the repository.
+
+\begin{table}[H]
+\centering
+\caption{Functional requirements and verification evidence}
+\label{tab:fr}
+\small
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.1cm}@{}}
+\toprule
+ID & Requirement & Evidence \\
+\midrule
+FR-1 & Sign in with e-mail and password; self-registration is closed and accounts are created by an administrator. & Authentication scenario \\
+FR-2 & Roles are enforced on every endpoint and page; data access is limited to the user's own scope. & Role-based access scenario; access-control unit tests \\
+FR-3 & Administrators search, edit, deactivate and delete users and reset passwords. & User service tests \\
+FR-4 & Create, read, update and delete classes, subjects, teachers (with their subjects), students and parents with links to children. & API scenarios \\
+FR-5 & Timetable per class and teacher; overlapping lessons of a class, a teacher or a room, and subjects the teacher does not teach, are rejected. & Timetable service tests \\
+FR-6 & Attendance is recorded per class and day with four statuses; reports show the percentage. & Attendance tests \\
+FR-7 & Marks are whole numbers from 1 to 5; the subject mark is the average rounded half up; anything else is rejected. & Grade service tests; five-point scenario \\
+FR-8 & Pupils and parents read a weekly diary with marks next to lessons; teachers use a gradebook per class and subject. & Web tests; browser test \\
+FR-9 & Notifications for new marks, absences and announcements, optionally also by e-mail; a daily reminder for teachers who have not recorded today's attendance. & Notification and reminder tests \\
+FR-10 & Export marks and attendance to CSV that opens correctly in a spreadsheet. & Export tests \\
+FR-11 & A public home page lists school news; administrators publish, pin, edit and delete items. & News tests; browser test \\
+FR-12 & Aggregated marks and attendance are available as database views for reporting. & Migration 000005 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Non-functional requirements}
+
+\textbf{Security} is the first concern because the data describe minors. Passwords must be stored only as bcrypt hashes. Session cookies must be \code{HttpOnly} and \code{SameSite=Strict}. Every state-changing browser request must prove that it originates from the application. Output must be escaped, a content-security policy must forbid foreign scripts, and repeated login attempts must be limited.
+
+\textbf{Data integrity} must not depend on the application alone. Marks outside the scale, lessons that end before they start and duplicate natural keys must be impossible at the database level as well.
+
+\textbf{Performance.} Read endpoints should answer in under 200\,ms at the 95th percentile with 20 concurrent users on a data set of about 1\,000 pupils (NFR-3). This is the requirement evaluated in Section~\ref{sec:load}.
+
+\textbf{Usability.} A user should be able to complete the main task of their role without help, and the layout must work from 360\,px width. The first part is covered by a usability test plan (Section~\ref{sec:limits}), the second by automated and manual checks.
+
+\textbf{Maintainability and recoverability.} The code must keep handlers, business rules and persistence in separate layers, with services depending on interfaces. A tested backup and restore procedure must exist, with a recovery-point objective of 24 hours. The system must run from a container image together with PostgreSQL 16.
+
+\section{Data quality and acceptance criteria}
+
+The business rules above are enforced in two places. The service layer validates input and returns an explicit error that handlers translate into an HTTP status: 400 for a malformed, out-of-range or conflicting value (an overlapping lesson is reported this way, with a message naming the clash), 403 for a forbidden action and 404 for an unknown object. The database rejects what slips past: the \code{chk\_grades\_five\_point} constraint accepts only the values 1 to 5, a check constraint requires a lesson to end after it starts, and unique constraints guard e-mail addresses, subject codes and student numbers. The service rule gives a helpful message, the constraint is the last line of defence.
+
+The work is accepted if the application runs from a clean database with the supplied migrations; every functional requirement of Table~\ref{tab:fr} has a passing automated check or a recorded manual check; the migrations apply forwards, backwards and forwards again without error; and the performance requirement is met on a documented data set. Acceptance does not require a user study or a statement about capacity beyond the measured configuration; Section~\ref{sec:limits} states what remains unproven.
+
+\section{Scope decisions}
+
+Public self-registration was deliberately removed. In the first version anyone could register and obtain the administrator role, which is unacceptable for a system holding pupils' data. Accounts are now created by an administrator, and the first administrator is bootstrapped from two environment variables at start-up.
+
+Fee tracking is optional in the original work plan and is not delivered. A real-time messaging feature was also left out: notifications cover the main need, and a chat between teachers and parents would raise moderation questions that a thesis-sized project cannot address responsibly. The user interface is written in English; making it multilingual is listed as future work.

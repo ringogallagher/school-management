@@ -11,7 +11,10 @@ Built with Go, PostgreSQL and HTMX as a bachelor's thesis project.
 | **Accounts & roles** | Admin, teacher, student, parent. JWT auth (API) and cookie sessions (web). Admin user management: search, deactivate, reset password. |
 | **School structure** | Classes with homeroom teachers, students, parents linked to children, subjects with credits, teacher subject qualifications. |
 | **Attendance** | Whole-class sheet per day (present / absent / late / excused + note), reports per student and class, attendance % = (present + late) / (days − excused). |
-| **Grades** | Gradebook per class / subject / term, per-subject averages, credit-weighted GPA on a 4.0 scale. Teachers can only edit marks they entered. |
+| **Grades** | Five-point marks (whole numbers 1-5, enforced by the service and a database CHECK). Gradebook per class / subject / term, per-subject average and final mark (average rounded half up), overall average. Teachers can only edit marks they entered. |
+| **E-diary** | Weekly diary for students and parents: lessons by day with the marks received next to them. |
+| **News** | Public home page (`/`) with school news; administrators publish, pin, edit and delete items. |
+| **Export** | CSV export of marks and attendance (student and class). |
 | **Timetable** | Weekly timetable per class and teacher, with clash detection for class, teacher and room. |
 | **Notifications** | In-app (and optional e-mail) messages for new grades, absences, low attendance (< 75 %), announcements and daily "attendance not marked" reminders. |
 | **Security** | Role-based access checked in the service layer, login rate limiting, CSRF and XSS protection, CSP, no public self-registration. |

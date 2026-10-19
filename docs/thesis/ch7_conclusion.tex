@@ -1,0 +1,25 @@
+\chapter{Conclusion and future work}
+
+\section{Application outcomes}
+
+The project produced a working web application for school management with a five-point marking scheme, a weekly electronic diary and a public home page with school news. Administrators manage accounts, classes, subjects, the timetable, news and announcements. Teachers record attendance and give marks with a single press in a gradebook. Pupils and parents read a weekly diary in which each mark stands next to its lesson, a marks page with averages and final marks, attendance, notifications and CSV exports. A visitor who is not signed in sees the latest news.
+
+The central technical contribution is a set of rules that are explicit and tested rather than implicit in the screens. Access is decided by one component from relationships stored in the database. A mark is a whole number from 1 to 5, enforced by the service and by a database constraint. The subject mark is the average rounded half up, and the attendance percentage has a stated formula with a one-time low-attendance warning. The migration from the earlier 0--100 scores has defined, documented behaviour in both directions.
+
+The architecture keeps handlers, rules and persistence in separate layers, and services depend on interfaces. This allowed the same HTTP scenarios to run on in-memory repositories and on PostgreSQL through the production router, which gave the tests the same routes, middleware and handlers as the deployed system.
+
+\section{Testing results}
+
+The suite of 87 test functions (135 passing cases) passes with the race detector, and the HTTP scenarios pass on PostgreSQL 16. The migrations apply forwards, backwards and forwards again, and a backup restores into an identical database. With 1\,016 pupils, 12\,269 marks and 20\,240 attendance rows and 20 concurrent workers, every measured endpoint answered with a 95th-percentile latency of at most 54.2\,ms and without errors, against a requirement of 200\,ms. The browser test and a review of the main pages of every role found no functional errors, no horizontal overflow at phone width and correct escaping of hostile text.
+
+These results answer the evaluation questions within their stated conditions. The rules hold under test, the performance requirement is met for a school-sized data set on the measured configuration, and the limits listed in Section~\ref{sec:limits} define what remains unproven, above all the absence of a user study.
+
+\section{Possible extensions}
+
+The most valuable next step is the usability study that was planned but not run: five participants per role group, the defined tasks and the System Usability Scale, which would turn design intentions about the diary into evidence. A second step is to make the interface multilingual, starting with Hungarian and Russian, which is mechanical because all text is in templates.
+
+Several functional extensions follow from the design. Homework and lesson topics could be added to the diary, since the week layout already has the place for them. News could support formatting, pictures and visibility by role or class. Messages between teachers and parents would need moderation rules. Fee tracking, which the original plan listed as optional, would reuse the same access component. On the technical side, a deployment with several processes would require a shared scheduler for reminders and a shared rate limiter, and an accessibility audit would show how well the interface serves users with different needs.
+
+\section{Final conclusion}
+
+The system combines persistent storage, explicit access and grading rules, and a diary-style interface in a usable school application. Its engineering decisions are supported by automated tests, a load measurement against a stated requirement, and a recorded list of limitations. The main outcome is a working application whose rules can be read in the code, checked by the tests and explained to the people who depend on them.

@@ -10,7 +10,9 @@ package web
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"html/template"
@@ -98,8 +100,21 @@ func New(svc Services, secureCookie bool, loginLimiter *middleware.RateLimiter) 
 
 var weekdays = []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
 
+// assetVersion is a short hash of the embedded stylesheet and script. It goes into their URLs
+// (/static/app.css?v=...) so that a browser never combines new HTML with a cached old file
+// after the application is updated, even though static files are cached for an hour.
+var assetVersion = func() string {
+	h := sha256.New()
+	for _, name := range []string{"static/app.css", "static/htmx.min.js"} {
+		b, _ := staticFS.ReadFile(name)
+		h.Write(b)
+	}
+	return hex.EncodeToString(h.Sum(nil))[:10]
+}()
+
 var funcMap = template.FuncMap{
-	"date": func(t time.Time) string { return t.Format("2 Jan 2006") },
+	"assetVersion": func() string { return assetVersion },
+	"date":         func(t time.Time) string { return t.Format("2 Jan 2006") },
 	"isoDate": func(t time.Time) string {
 		if t.IsZero() {
 			return ""
@@ -247,12 +262,11 @@ func paragraphs(text string) []string {
 	return out
 }
 
-// snippet returns the first paragraph of text, shortened to about max characters at a word boundary
+// snippet returns the beginning of text with all whitespace collapsed (paragraph breaks become spaces),
+// shortened to about max characters at a word boundary. Using the whole text instead of only the first
+// paragraph keeps a feed card useful when a news item opens with a one-line greeting.
 func snippet(text string, max int) string {
 	first := text
-	if ps := paragraphs(text); len(ps) > 0 {
-		first = ps[0]
-	}
 	first = strings.Join(strings.Fields(first), " ")
 	runes := []rune(first)
 	if len(runes) <= max {
