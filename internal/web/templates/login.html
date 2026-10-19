@@ -1,0 +1,21 @@
+{{define "content"}}
+<main class="login">
+  <a class="brand" href="/">
+    <span class="brand-mark" aria-hidden="true">5</span>
+    <span class="brand-name">School Diary</span>
+  </a>
+  <h1>Sign in</h1>
+  <p class="lede">Use the account your school gave you.</p>
+  {{template "alerts" .}}
+  <form method="post" action="/login" hx-target="body">
+    <label>Email
+      <input type="email" name="email" value="{{if .Data}}{{.Data}}{{end}}" autocomplete="username" required autofocus>
+    </label>
+    <label>Password
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn btn-block">Sign in</button>
+  </form>
+  <p class="muted login-foot">Forgot your password? Ask the school office to reset it.<br><a href="/">← School news</a></p>
+</main>
+{{end}}

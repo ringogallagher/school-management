@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: school_management_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: school_management
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - school_management_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: school_management_api
+    environment:
+      DATABASE_URL: "postgres://postgres:password@postgres:5432/school_management?sslmode=disable"
+      JWT_SECRET: "your-secret-key-change-in-production"
+      PORT: "8080"
+      # First administrator, created on startup if none exists
+      ADMIN_EMAIL: "admin@school.test"
+      ADMIN_PASSWORD: "admin12345"
+      # Notification e-mails: set SMTP_HOST (+ SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM)
+      # to send real mail; EMAIL_LOG=true only writes them to the log
+      EMAIL_LOG: "true"
+      REMINDER_HOUR: "15"
+      TZ: "Europe/Budapest"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - school_management_network
+    restart: unless-stopped
+    healthcheck:
+      # alpine has no curl; busybox wget is available
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  migrate:
+    image: migrate/migrate
+    container_name: school_management_migrate
+    volumes:
+      - ./migrations:/migrations
+    command: -path /migrations -database "postgres://postgres:password@postgres:5432/school_management?sslmode=disable" up
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - school_management_network
+
+volumes:
+  postgres_data:
+
+networks:
+  school_management_network:
+    driver: bridge

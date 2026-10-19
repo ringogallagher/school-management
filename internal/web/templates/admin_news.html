@@ -1,0 +1,37 @@
+{{define "content"}}
+{{with .Data}}
+<h1>School news</h1>
+<p class="lede">News appears on the home page for everyone, including visitors who are not signed in.</p>
+
+<form method="post" action="{{if .Form.ID}}/admin/news/{{.Form.ID}}{{else}}/admin/news{{end}}" class="form-grid news-form">
+  <h2 class="wide">{{if .Form.ID}}Edit news item{{else}}New news item{{end}}</h2>
+  <label class="wide">Title <input name="title" maxlength="200" value="{{.Form.Title}}" required></label>
+  <label class="wide">Text <textarea name="body" rows="8" maxlength="10000" required>{{.Form.Body}}</textarea></label>
+  <label class="check"><input type="checkbox" name="pinned" {{if .Form.Pinned}}checked{{end}}> Pin to the top</label>
+  <div class="wide">
+    <button class="btn">{{if .Form.ID}}Save changes{{else}}Publish{{end}}</button>
+    {{if .Form.ID}}<a class="btn btn-quiet" href="/admin/news">Cancel</a>{{end}}
+  </div>
+</form>
+
+<h2>Published</h2>
+{{if .Items}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Title</th><th>Date</th><th>Author</th><th></th></tr></thead>
+  <tbody>
+  {{range .Items}}
+  <tr>
+    <td>{{if .Pinned}}<span class="tag">Pinned</span> {{end}}<a href="/news/{{.ID}}">{{.Title}}</a></td>
+    <td class="num">{{date .CreatedAt}}</td>
+    <td>{{newsAuthor .}}</td>
+    <td class="num">
+      <a href="/admin/news?edit={{.ID}}">Edit</a>
+      <form method="post" action="/admin/news/{{.ID}}/delete" class="inline"><button class="link link-danger">Delete</button></form>
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">Nothing published yet.</p>{{end}}
+{{end}}
+{{end}}

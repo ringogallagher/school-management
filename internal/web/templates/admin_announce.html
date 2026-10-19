@@ -1,0 +1,18 @@
+{{define "content"}}
+<h1>Announcements</h1>
+<p class="lede">Announcements appear in everyone's notifications.</p>
+<form method="post" action="/admin/announce" class="form-grid" style="max-width:44rem">
+  <label>Send to
+    <select name="role">
+      <option value="">Everyone</option>
+      <option value="teacher">Teachers</option>
+      <option value="student">Students</option>
+      <option value="parent">Parents</option>
+      <option value="admin">Administrators</option>
+    </select>
+  </label>
+  <label class="wide">Title <input name="title" maxlength="200" required></label>
+  <label class="wide">Message <textarea name="message" required></textarea></label>
+  <div><button class="btn">Send announcement</button></div>
+</form>
+{{end}}

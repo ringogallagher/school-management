@@ -1,0 +1,44 @@
+{{define "content"}}
+<h1>Students</h1>
+<form class="toolbar" method="get" action="/admin/students" hx-get="/admin/students" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>Class
+    <select name="class">
+      <option value="">All classes</option>
+      {{range .Data.Classes}}<option value="{{.ID}}" {{if eq .ID $.Data.ClassID}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+  </label>
+  <noscript><button class="btn btn-quiet">Show</button></noscript>
+</form>
+{{if .Data.Students}}
+<div class="table-wrap"><table>
+  <thead><tr><th>No.</th><th>Name</th><th>Class</th><th>Email</th><th>Enrolled</th><th></th></tr></thead>
+  <tbody>
+  {{range .Data.Students}}
+  <tr>
+    <td class="muted">{{.StudentNumber}}</td><td><strong>{{.LastName}}</strong> {{.FirstName}}</td>
+    <td>{{index $.Data.ClassNames .ClassID}}</td><td>{{.Email}}</td><td>{{date .EnrollmentDate}}</td>
+    <td class="num"><a href="/students/{{.ID}}/grades">Grades</a> · <a href="/students/{{.ID}}/attendance">Attendance</a></td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">No students{{if .Data.ClassID}} in this class{{end}} yet.</p>{{end}}
+
+<details class="panel" {{if .Error}}open{{end}}>
+  <summary>Enrol a student</summary>
+  {{if .Data.Classes}}
+  <form method="post" action="/admin/students" class="form-grid">
+    <label>First name <input name="first_name" required></label>
+    <label>Last name <input name="last_name"></label>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Initial password <input type="password" name="password" minlength="8" required></label>
+    <label>Class
+      <select name="class_id" required>{{range .Data.Classes}}<option value="{{.ID}}" {{if eq .ID $.Data.ClassID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    </label>
+    <label>Student number <input name="student_number" required></label>
+    <label>Enrolment date <input type="date" name="enrollment_date"></label>
+    <div><button class="btn">Enrol student</button></div>
+  </form>
+  {{else}}<p>Create a <a href="/admin/classes">class</a> first.</p>{{end}}
+</details>
+{{end}}

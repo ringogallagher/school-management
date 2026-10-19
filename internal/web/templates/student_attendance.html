@@ -1,0 +1,36 @@
+{{define "content"}}
+{{with .Data}}
+<h1>{{if .Header.Self}}My attendance{{else}}Attendance{{if .Header.Name}} — {{.Header.Name}}{{end}}{{end}}</h1>
+{{if .Report}}
+{{$path := printf "/students/%d/attendance" .Header.StudentID}}{{if .Header.Self}}{{$path = "/my/attendance"}}{{end}}
+<form class="toolbar" method="get" action="{{$path}}" hx-get="{{$path}}" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>From <input type="date" name="from" value="{{.From}}"></label>
+  <label>To <input type="date" name="to" value="{{.To}}"></label>
+  <noscript><button class="btn btn-quiet">Show</button></noscript>
+  {{if not .Header.Self}}<a href="/students/{{.Header.StudentID}}/grades">Grades</a>{{end}}
+  <a class="btn btn-quiet btn-sm" hx-boost="false" download href="{{if .Header.Self}}/my/attendance.csv{{else}}/students/{{.Header.StudentID}}/attendance.csv{{end}}?from={{.From}}&to={{.To}}">Export CSV</a>
+</form>
+{{with .Report.Summary}}
+<div class="figures">
+  <div class="figure"><b class="{{if eq (pctBand .Percentage) "low"}}pct-low{{end}}">{{num .Percentage}}%</b><span>attendance</span>
+    <div class="meter meter-{{pctBand .Percentage}}"><i style="width: {{clamp .Percentage}}%"></i></div></div>
+  <div class="figure"><b>{{.Present}}</b><span>present</span></div>
+  <div class="figure"><b>{{.Late}}</b><span>late</span></div>
+  <div class="figure"><b>{{.Absent}}</b><span>absent</span></div>
+  <div class="figure"><b>{{.Excused}}</b><span>excused</span></div>
+</div>
+{{end}}
+<p class="muted">{{if or .From .To}}Selected period.{{else}}Last 30 days.{{end}} Late counts as attended; excused days are not counted.</p>
+{{if .Report.Records}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Date</th><th>Class</th><th>Status</th><th>Note</th></tr></thead>
+  <tbody>
+  {{range .Report.Records}}
+  <tr><td>{{date .Date}}</td><td>{{index $.Data.Classes .ClassID}}</td><td><span class="status status-{{.Status}}">{{title (print .Status)}}</span></td><td class="muted">{{.Remarks}}</td></tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">No attendance recorded in this period.</p>{{end}}
+{{end}}
+{{end}}
+{{end}}

@@ -1,0 +1,40 @@
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Today</h1>
+  <p class="lede">{{longDay $.Today}}</p>
+</div>
+
+{{if .Pending}}
+<p class="alert alert-err">Attendance isn't marked yet for
+{{range $i, $p := .Pending}}{{if $i}}, {{end}}<a href="/attendance?class={{$p.ClassID}}">{{$p.ClassName}}</a>{{end}}.</p>
+{{end}}
+
+<div class="grid-2">
+  <section class="card">
+    <h2>Your lessons today</h2>
+    {{if .Lessons}}
+    <ol class="lesson-rows">
+      {{range .Lessons}}
+      <li><time>{{.StartTime}}–{{.EndTime}}</time><span class="ls"><strong>{{.SubjectName}}</strong><small>{{.ClassName}}</small></span><span class="lm room">{{if .RoomNumber}}Room {{.RoomNumber}}{{end}}</span></li>
+      {{end}}
+    </ol>
+    {{else}}<p class="empty">No lessons scheduled today.</p>{{end}}
+    <p><a href="/timetable">See the whole week</a></p>
+  </section>
+  <section class="card">
+    <h2>Your classes</h2>
+    {{if .Classes}}
+    <div class="table-wrap"><table>
+      <tbody>
+      {{range .Classes}}
+      <tr><td><strong>{{.Name}}</strong></td>
+          <td class="num"><a href="/attendance?class={{.ID}}">Attendance</a> · <a href="/gradebook?class={{.ID}}">Marks</a> · <a href="/attendance/stats?class={{.ID}}">Statistics</a></td></tr>
+      {{end}}
+      </tbody>
+    </table></div>
+    {{else}}<p class="empty">You aren't assigned to any class yet. The school office adds you through the timetable or as a homeroom teacher.</p>{{end}}
+  </section>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,132 @@
+{{define "head"}}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"403","swap":true},{"code":"404","swap":true},{"code":"[45]..","swap":false,"error":true}]}'>
+<title>{{.Title}} · School Diary</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js" defer></script>
+{{end}}
+
+{{define "alerts"}}
+{{if .Flash}}<p class="alert alert-ok" role="status">{{.Flash}}</p>{{end}}
+{{if .Error}}<p class="alert alert-err" role="alert">{{.Error}}</p>{{end}}
+{{end}}
+
+{{/* mark renders one five-point mark as a coloured badge; pass a float64 */}}
+{{define "mark"}}<span class="mark m{{band .}}">{{num .}}</span>{{end}}
+
+{{define "bare"}}<!doctype html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body class="bare" hx-boost="true">
+{{template "content" .}}
+</body>
+</html>{{end}}
+
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>{{template "head" .}}</head>
+<body hx-boost="true">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="bar">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">5</span>
+      <span class="brand-name">School Diary</span>
+    </a>
+    <nav class="mainnav" aria-label="Main">
+      <ul>
+        <li><a href="/" {{if eq .Nav "news"}}aria-current="page"{{end}}>News</a></li>
+        {{if .User}}
+        <li><a href="/dashboard" {{if eq .Nav "dashboard"}}aria-current="page"{{end}}>Today</a></li>
+        {{if .IsRole "student"}}
+        <li><a href="/my/diary" {{if eq .Nav "diary"}}aria-current="page"{{end}}>Diary</a></li>
+        <li><a href="/my/grades" {{if eq .Nav "grades"}}aria-current="page"{{end}}>Marks</a></li>
+        <li><a href="/my/attendance" {{if eq .Nav "attendance"}}aria-current="page"{{end}}>Attendance</a></li>
+        {{end}}
+        {{if .IsRole "parent"}}
+        <li><a href="/children" {{if eq .Nav "children"}}aria-current="page"{{end}}>My children</a></li>
+        {{end}}
+        {{if .IsRole "teacher" "admin"}}
+        <li><a href="/attendance" {{if eq .Nav "attendance"}}aria-current="page"{{end}}>Attendance</a></li>
+        <li><a href="/gradebook" {{if eq .Nav "gradebook"}}aria-current="page"{{end}}>Gradebook</a></li>
+        {{end}}
+        {{if .IsRole "teacher" "student"}}
+        <li><a href="/timetable" {{if eq .Nav "timetable"}}aria-current="page"{{end}}>Timetable</a></li>
+        {{end}}
+        {{if .IsRole "admin"}}
+        <li>
+          <details class="menu">
+            <summary {{if or (eq .Nav "classes") (eq .Nav "students") (eq .Nav "teachers") (eq .Nav "parents") (eq .Nav "subjects") (eq .Nav "adminnews") (eq .Nav "announce") (eq .Nav "users") (eq .Nav "timetable")}}class="active"{{end}}>Manage</summary>
+            <ul class="menu-list">
+              <li><a href="/admin/news">News</a></li>
+              <li><a href="/admin/announce">Announcements</a></li>
+              <li><a href="/admin/classes">Classes</a></li>
+              <li><a href="/admin/students">Students</a></li>
+              <li><a href="/admin/teachers">Teachers</a></li>
+              <li><a href="/admin/parents">Parents</a></li>
+              <li><a href="/admin/subjects">Subjects</a></li>
+              <li><a href="/admin/timetable">Timetable</a></li>
+              <li><a href="/admin/users">User accounts</a></li>
+            </ul>
+          </details>
+        </li>
+        {{end}}
+        {{end}}
+      </ul>
+    </nav>
+    <div class="bar-end">
+      {{if .User}}
+      <a class="bell" href="/notifications" title="Notifications" aria-label="Notifications" {{if eq .Nav "notifications"}}aria-current="page"{{end}}>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm6.6-6.2V11a6.6 6.6 0 0 0-5.1-6.4V3.9a1.5 1.5 0 0 0-3 0v.7A6.6 6.6 0 0 0 5.4 11v4.8L3.5 17.7v1h17v-1l-1.9-1.9z" fill="currentColor"/></svg>
+        <span class="badge-slot" hx-get="/notifications/badge" hx-trigger="load, every 30s" hx-swap="innerHTML"></span>
+      </a>
+      <details class="menu user-menu">
+        <summary aria-label="Account menu"><span class="avatar" aria-hidden="true">{{initial .User.FirstName}}</span><span class="user-name">{{.User.FirstName}}</span></summary>
+        <div class="menu-list menu-right">
+          <p class="menu-who"><strong>{{.User.FirstName}} {{.User.LastName}}</strong><span>{{title (print .User.Role)}}</span></p>
+          <a href="/account">Account &amp; password</a>
+          <form method="post" action="/logout"><button class="link">Sign out</button></form>
+        </div>
+      </details>
+      {{else}}
+      <a class="btn btn-sm" href="/login">Sign in</a>
+      {{end}}
+    </div>
+  </div>
+</header>
+<main id="main" class="page">
+  {{template "alerts" .}}
+  {{if .Plain}}{{template "content" .}}{{else}}<div class="card">{{template "content" .}}</div>{{end}}
+</main>
+<footer class="foot">School Diary · marks on the five-point scale</footer>
+</body>
+</html>{{end}}
+
+{{/* weekgrid renders a week of lessons; .Admin adds remove buttons, .ClassID is used for redirects */}}
+{{define "weekgrid"}}
+<div class="week">
+  {{range .Week.Days}}
+  <section class="week-day{{if .IsToday}} today{{end}}" aria-label="{{day .Day}}">
+    <h3>{{day .Day}}</h3>
+    {{if .Lessons}}
+    <ol>
+      {{range .Lessons}}
+      <li>
+        <time>{{.StartTime}}–{{.EndTime}}</time>
+        <strong>{{.SubjectName}}</strong><br>
+        <small>{{if $.ShowClass}}{{.ClassName}} · {{end}}{{.TeacherName}}{{if .RoomNumber}} · room {{.RoomNumber}}{{end}}</small>
+        {{if $.Admin}}
+        <form method="post" action="/admin/timetable/{{.ID}}/delete">
+          <input type="hidden" name="class_id" value="{{.ClassID}}">
+          <button class="link">Remove</button>
+        </form>
+        {{end}}
+      </li>
+      {{end}}
+    </ol>
+    {{else}}<p class="none">No lessons</p>{{end}}
+  </section>
+  {{end}}
+</div>
+{{end}}

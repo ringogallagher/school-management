@@ -1,0 +1,45 @@
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>{{if .Header.Self}}My diary{{else}}Diary{{if .Header.Name}} — {{.Header.Name}}{{end}}{{end}}</h1>
+  {{if not .Header.Self}}{{if .Header.StudentID}}<p class="lede"><a href="/students/{{.Header.StudentID}}/grades">Marks</a> · <a href="/students/{{.Header.StudentID}}/attendance">Attendance</a></p>{{end}}{{end}}
+</div>
+
+{{if .Base}}
+<nav class="card weekbar" aria-label="Week">
+  <a class="btn btn-quiet btn-sm" href="{{.Base}}?week={{.Prev}}">← Previous</a>
+  <strong class="weeklabel">{{.WeekLabel}}</strong>
+  <span class="weekbar-end">
+    {{if not .IsCurrent}}<a class="btn btn-quiet btn-sm" href="{{.Base}}">This week</a>{{end}}
+    <a class="btn btn-quiet btn-sm" href="{{.Base}}?week={{.Next}}">Next →</a>
+  </span>
+</nav>
+{{end}}
+
+<div class="diary">
+  {{range .Days}}
+  <section class="card day{{if .IsToday}} today{{end}}">
+    <h2><span class="day-name">{{weekday .Date}}</span>{{longDay .Date}}{{if .IsToday}} <span class="tag">Today</span>{{end}}</h2>
+    {{if .Lessons}}
+    <ol class="lesson-rows">
+      {{range .Lessons}}
+      <li>
+        <time>{{.Lesson.StartTime}}–{{.Lesson.EndTime}}</time>
+        <span class="ls"><strong>{{.Lesson.SubjectName}}</strong><small>{{.Lesson.TeacherName}}{{if .Lesson.RoomNumber}} · room {{.Lesson.RoomNumber}}{{end}}</small></span>
+        <span class="lm">{{range .Marks}}<span class="mark m{{band .Marks}}" title="{{.Term}}">{{num .Marks}}</span>{{end}}</span>
+      </li>
+      {{end}}
+    </ol>
+    {{else}}<p class="none">No lessons.</p>{{end}}
+    {{if .Other}}
+    <p class="other">Other marks:
+      {{range .Other}}<span class="other-mark">{{.SubjectName}} <span class="mark m{{band .Marks}}">{{num .Marks}}</span></span>{{end}}
+    </p>
+    {{end}}
+  </section>
+  {{else}}
+  <div class="card"><p class="empty">The diary is not available.</p></div>
+  {{end}}
+</div>
+{{end}}
+{{end}}

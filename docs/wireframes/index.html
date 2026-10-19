@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wireframes</title>
+<style>
+body{font:14px/1.4 system-ui,sans-serif;margin:0;background:#eef0f3;color:#222}
+h1{padding:16px 24px;margin:0;background:#fff;border-bottom:1px solid #ccd}
+section{padding:16px 24px}
+h2{margin:8px 0}
+.row{display:flex;flex-wrap:wrap;gap:20px}
+.screen{width:440px;background:#fff;border:2px solid #667;border-radius:6px;padding:0;overflow:hidden}
+.screen>h3{margin:0;padding:6px 10px;background:#667;color:#fff;font-size:13px}
+.bar{display:flex;gap:10px;padding:8px 10px;background:#dde;border-bottom:1px solid #99a;font-size:12px}
+.bar b{margin-right:auto}
+.body{padding:10px}
+.box{border:1px dashed #889;padding:8px;margin:6px 0;background:#f8f8fb}
+.cols{display:flex;gap:8px}.cols>*{flex:1}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #aab;padding:3px 5px}th{background:#eef}
+.m{display:inline-block;width:20px;text-align:center;border:1px solid #556;border-radius:3px}
+.btn{display:inline-block;border:1px solid #445;padding:2px 10px;border-radius:3px;background:#dde}
+</style></head><body>
+<h1>School Management: wireframes</h1>
+<section><p>Low-fidelity layouts of the main screens. They show structure and content, not final styling (the implemented look is in <code>internal/web/static/app.css</code>).</p></section>
+<section><h2>Public</h2><div class="row">
+<div class="screen"><h3>Home (guest)</h3><div class="bar"><b>School</b><span>News</span><span class="btn">Sign in</span></div><div class="body">
+<div class="box"><b>Pinned news title</b><br>Short text...</div><div class="box"><b>News title</b> <small>12 Oct</small><br>Short text...</div><div class="box"><b>News title</b></div></div></div>
+<div class="screen"><h3>Sign in</h3><div class="bar"><b>School</b></div><div class="body"><div class="box">E-mail<br>[__________]</div><div class="box">Password<br>[__________]</div><span class="btn">Sign in</span></div></div>
+</div></section>
+<section><h2>Student / parent</h2><div class="row">
+<div class="screen"><h3>Dashboard</h3><div class="bar"><b>School</b><span>Diary</span><span>Marks</span><span>Attendance</span><span>&#128276; 2</span></div><div class="body">
+<div class="cols"><div class="box">Average<br><b>4.3</b></div><div class="box">Attendance<br><b>96%</b></div><div class="box">Unread<br><b>2</b></div></div>
+<div class="box"><b>Today</b><br>08:00 Math, room 101<br>09:00 Physics, room 204</div><div class="box"><b>Recent marks</b><br>Math <span class="m">5</span> Physics <span class="m">4</span></div></div></div>
+<div class="screen"><h3>Diary (week)</h3><div class="bar"><span>&larr;</span><b>5 - 11 Oct</b><span>&rarr;</span></div><div class="body">
+<table><tr><th>Mon</th><th>Tue</th><th>Wed</th></tr><tr><td>1 Math <span class="m">5</span></td><td>1 Physics</td><td>1 Art</td></tr><tr><td>2 History</td><td>2 Math <span class="m">4</span></td><td>2 Math</td></tr></table></div></div>
+<div class="screen"><h3>Marks</h3><div class="bar"><b>Marks</b><span>Term: Q1 &#9662;</span><span class="btn">Export CSV</span></div><div class="body">
+<table><tr><th>Subject</th><th>Marks</th><th>Avg</th><th>Final</th></tr><tr><td>Math</td><td><span class="m">5</span><span class="m">4</span></td><td>4.5</td><td><span class="m">5</span></td></tr></table></div></div>
+</div></section>
+<section><h2>Teacher</h2><div class="row">
+<div class="screen"><h3>Attendance sheet</h3><div class="bar"><span>Class 9A &#9662;</span><span>Date 13 Oct</span></div><div class="body">
+<table><tr><th>Student</th><th>Status</th><th>Remark</th></tr><tr><td>Anna</td><td>present &#9662;</td><td></td></tr><tr><td>Bence</td><td>absent &#9662;</td><td>ill</td></tr></table><p><span class="btn">Save</span></p></div></div>
+<div class="screen"><h3>Gradebook</h3><div class="bar"><span>Class 9A &#9662;</span><span>Math &#9662;</span><span class="btn">Export CSV</span></div><div class="body">
+<div class="box">Student [&#9662;] Mark [1-5] Term [Q1] <span class="btn">Add</span></div>
+<table><tr><th>Student</th><th>Marks</th><th>Avg</th></tr><tr><td>Anna</td><td><span class="m">5</span><span class="m">4</span></td><td>4.5</td></tr></table></div></div>
+</div></section>
+<section><h2>Administrator</h2><div class="row">
+<div class="screen"><h3>Users</h3><div class="bar"><span>Search [_____]</span><span>Role &#9662;</span></div><div class="body">
+<table><tr><th>Name</th><th>Role</th><th>Active</th><th></th></tr><tr><td>A. Kovacs</td><td>teacher</td><td>yes</td><td>Toggle | Password</td></tr></table></div></div>
+<div class="screen"><h3>Timetable editor</h3><div class="bar"><span>Class 9A &#9662;</span></div><div class="body"><div class="box">Subject [&#9662;] Teacher [&#9662;] Day [&#9662;] 08:00-08:45 Room [__] <span class="btn">Add</span></div>
+<div class="box" style="border-color:#c33">Error: teacher is busy at this time</div></div></div>
+<div class="screen"><h3>News editor</h3><div class="bar"><b>News</b></div><div class="body"><div class="box">Title [__________]</div><div class="box">Text<br>[<br><br>]</div><div class="box">&#9744; Pin to the top</div><span class="btn">Publish</span></div></div>
+</div></section>
+</body></html>

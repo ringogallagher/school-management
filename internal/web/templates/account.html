@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>Account</h1>
+<p class="lede">{{.User.FirstName}} {{.User.LastName}} · {{.User.Email}}</p>
+<h2>Change password</h2>
+<form method="post" action="/account/password" class="form-grid" style="max-width: 40rem">
+  <label class="wide">Current password <input type="password" name="old_password" autocomplete="current-password" required></label>
+  <label>New password <input type="password" name="new_password" minlength="8" autocomplete="new-password" required></label>
+  <label>Repeat new password <input type="password" name="confirm_password" minlength="8" autocomplete="new-password" required></label>
+  <div class="wide"><button class="btn">Change password</button></div>
+</form>
+{{end}}

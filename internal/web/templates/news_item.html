@@ -1,0 +1,13 @@
+{{define "content"}}
+<article class="card article">
+  <p class="crumb"><a href="/">← All news</a></p>
+  {{with .Data}}
+  <div class="news-meta">
+    {{if .Pinned}}<span class="tag">Pinned</span>{{end}}
+    <time datetime="{{isoDate .CreatedAt}}">{{date .CreatedAt}}</time> · {{newsAuthor .}}
+  </div>
+  <h1>{{.Title}}</h1>
+  {{range paragraphs .Body}}<p>{{.}}</p>{{end}}
+  {{end}}
+</article>
+{{end}}

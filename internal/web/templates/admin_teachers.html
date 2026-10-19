@@ -1,0 +1,46 @@
+{{define "content"}}
+<h1>Teachers</h1>
+<p class="lede">Assigning subjects is optional. A teacher with subjects assigned can only be timetabled for those subjects.</p>
+{{if .Data.Rows}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Subjects</th></tr></thead>
+  <tbody>
+  {{range .Data.Rows}}
+  {{$t := .}}
+  <tr>
+    <td><strong>{{.Teacher.LastName}}</strong> {{.Teacher.FirstName}}</td>
+    <td>{{.Teacher.Email}}</td>
+    <td>{{.Teacher.Department}}</td>
+    <td>
+      <details class="mark-edit">
+        <summary class="link" style="color:var(--pen)">{{if .Names}}{{range $i, $n := .Names}}{{if $i}}, {{end}}{{$n}}{{end}}{{else}}Any subject{{end}}</summary>
+        <div class="mark-pop" style="white-space:normal;min-width:18rem">
+          <form method="post" action="/admin/teachers/{{.Teacher.ID}}/subjects" style="display:grid;gap:.75rem">
+            <div class="checks">
+              {{range $.Data.Subjects}}<label><input type="checkbox" name="subject" value="{{.ID}}" {{if hasID $t.Subjects .ID}}checked{{end}}> {{.Name}}</label>{{end}}
+            </div>
+            <div><button class="btn btn-sm">Save subjects</button></div>
+          </form>
+        </div>
+      </details>
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">No teachers yet.</p>{{end}}
+
+<details class="panel" {{if or .Error (not .Data.Rows)}}open{{end}}>
+  <summary>Add a teacher</summary>
+  <form method="post" action="/admin/teachers" class="form-grid">
+    <label>First name <input name="first_name" required></label>
+    <label>Last name <input name="last_name"></label>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Initial password <input type="password" name="password" minlength="8" required></label>
+    <label>Department <input name="department"></label>
+    <label>Specialization <input name="specialization"></label>
+    <label>Hire date <input type="date" name="hire_date"></label>
+    <div><button class="btn">Add teacher</button></div>
+  </form>
+</details>
+{{end}}

@@ -1,0 +1,5 @@
+{{define "content"}}
+<h1>Timetable</h1>
+<p class="lede">Your week. Today is highlighted.</p>
+{{template "weekgrid" (dict "Week" .Data "Admin" false "ShowClass" (.IsRole "teacher"))}}
+{{end}}

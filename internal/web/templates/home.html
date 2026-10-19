@@ -1,0 +1,47 @@
+{{define "content"}}
+<section class="hero">
+  <div>
+    <h1>School news</h1>
+    <p class="lede">What is happening at school: announcements, events and reminders.</p>
+  </div>
+  {{if not .User}}<a class="btn" href="/login">Sign in to the diary</a>
+  {{else}}<a class="btn" href="/dashboard">Open my day</a>{{end}}
+</section>
+
+<div class="news-layout">
+  <div class="feed">
+    {{range .Data}}
+    <article class="card news-card{{if .Pinned}} pinned{{end}}">
+      <div class="news-meta">
+        {{if .Pinned}}<span class="tag">Pinned</span>{{end}}
+        <time datetime="{{isoDate .CreatedAt}}">{{date .CreatedAt}}</time> · {{newsAuthor .}}
+      </div>
+      <h2><a href="/news/{{.ID}}">{{.Title}}</a></h2>
+      <p>{{snippet .Body 260}}</p>
+      <a class="more" href="/news/{{.ID}}">Read more</a>
+    </article>
+    {{else}}
+    <div class="card"><p class="empty">No news yet. Announcements from the school will appear here.</p></div>
+    {{end}}
+  </div>
+  <aside class="side-col">
+    <section class="card">
+      <h3>The five-point scale</h3>
+      <ul class="legend">
+        <li><span class="mark m5">5</span> excellent</li>
+        <li><span class="mark m4">4</span> good</li>
+        <li><span class="mark m3">3</span> satisfactory</li>
+        <li><span class="mark m2">2</span> poor</li>
+        <li><span class="mark m1">1</span> very poor</li>
+      </ul>
+    </section>
+    {{if not .User}}
+    <section class="card">
+      <h3>Parents &amp; students</h3>
+      <p class="muted">Marks, attendance and the timetable are in your personal diary. Use the account the school office gave you.</p>
+      <a class="btn btn-quiet btn-sm" href="/login">Sign in</a>
+    </section>
+    {{end}}
+  </aside>
+</div>
+{{end}}

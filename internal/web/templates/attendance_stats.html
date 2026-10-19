@@ -1,0 +1,32 @@
+{{define "content"}}
+{{with .Data}}
+<h1>Attendance statistics</h1>
+{{if .Class}}
+<form class="toolbar" method="get" action="/attendance/stats" hx-get="/attendance/stats" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>Class
+    <select name="class">{{range .Classes}}<option value="{{.ID}}" {{if eq .ID $.Data.Class.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+  </label>
+  <label>From <input type="date" name="from" value="{{.From}}"></label>
+  <label>To <input type="date" name="to" value="{{.To}}"></label>
+  <noscript><button class="btn btn-quiet">Show</button></noscript>
+  <a class="btn btn-quiet btn-sm" hx-boost="false" download href="/attendance/stats.csv?class={{.Class.ID}}&from={{.From}}&to={{.To}}">Export CSV</a>
+</form>
+<p class="muted">Late counts as attended. Excused days don't count against the student. Below 75% is flagged in red. Without dates, the last 30 days are shown.</p>
+{{if .Stats}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Student</th><th class="num">Days</th><th class="num">Present</th><th class="num">Late</th><th class="num">Absent</th><th class="num">Excused</th><th class="num">Attendance</th></tr></thead>
+  <tbody>
+  {{range .Stats}}
+  <tr>
+    <td><a href="/students/{{.StudentID}}/attendance">{{.LastName}} {{.FirstName}}</a></td>
+    <td class="num">{{.Total}}</td><td class="num">{{.Present}}</td><td class="num">{{.Late}}</td>
+    <td class="num">{{.Absent}}</td><td class="num">{{.Excused}}</td>
+    <td class="num"><strong class="{{if eq (pctBand .Percentage) "low"}}pct-low{{end}}">{{if .Total}}{{num .Percentage}}%{{else}}–{{end}}</strong></td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">No students in this class.</p>{{end}}
+{{else}}<p class="empty">You don't have any classes yet.</p>{{end}}
+{{end}}
+{{end}}

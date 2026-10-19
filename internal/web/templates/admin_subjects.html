@@ -1,0 +1,26 @@
+{{define "content"}}
+<h1>Subjects</h1>
+<p class="lede">Credits weight each subject in the GPA.</p>
+{{if .Data}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Code</th><th>Subject</th><th>Description</th><th class="num">Credits</th><th></th></tr></thead>
+  <tbody>
+  {{range .Data}}
+  <tr><td class="muted">{{.Code}}</td><td><strong>{{.Name}}</strong></td><td class="muted">{{.Description}}</td><td class="num">{{.Credits}}</td>
+      <td class="num"><form method="post" action="/admin/subjects/{{.ID}}/delete"><button class="link">Delete</button></form></td></tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">No subjects yet.</p>{{end}}
+
+<details class="panel" {{if or .Error (not .Data)}}open{{end}}>
+  <summary>Add a subject</summary>
+  <form method="post" action="/admin/subjects" class="form-grid">
+    <label>Name <input name="name" placeholder="Mathematics" required></label>
+    <label>Code <input name="code" placeholder="MATH" maxlength="20" required></label>
+    <label>Credits <input type="number" name="credits" value="3" min="1" max="20"></label>
+    <label class="wide">Description <input name="description"></label>
+    <div><button class="btn">Add subject</button></div>
+  </form>
+</details>
+{{end}}

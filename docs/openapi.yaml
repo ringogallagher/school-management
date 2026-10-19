@@ -1,0 +1,882 @@
+openapi: 3.0.3
+info:
+  title: School Management API
+  version: 1.0.0
+  description: |
+    Responses use the envelope `{code, message, data}`. Authenticate with `Authorization: Bearer <token>` from `/api/auth/login`.
+    Marks use the five-point scale (integers 1-5). The `Roles` line of every operation lists who may call it; `scoped` means
+    admin and teacher, a student for themselves, a parent for linked children.
+servers:
+  - url: http://localhost:8080
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    Envelope:
+      description: Success
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Envelope'}
+    Csv:
+      description: CSV file (UTF-8 with BOM)
+      content:
+        text/csv:
+          schema: {type: string}
+    Error:
+      description: Error (400 validation, 401 not signed in, 403 forbidden, 404 not found, 429 too many login attempts)
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Envelope'}
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        code: {type: integer}
+        message: {type: string}
+        data: {}
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties: {email: {type: string, format: email}, password: {type: string}}
+    ChangePasswordRequest:
+      type: object
+      required: [old_password, new_password]
+      properties: {old_password: {type: string}, new_password: {type: string, minLength: 8}}
+    RegisterRequest:
+      type: object
+      required: [email, password, first_name, last_name, role]
+      properties: {email: {type: string}, password: {type: string}, first_name: {type: string}, last_name: {type: string}, role: {type: string, enum: [admin, teacher, student, parent]}}
+    NewsRequest:
+      type: object
+      required: [title, body]
+      properties: {title: {type: string, maxLength: 200}, body: {type: string, maxLength: 10000}, pinned: {type: boolean}}
+    ClassRequest:
+      type: object
+      required: [name, level, section, teacher_id]
+      properties: {name: {type: string}, level: {type: string}, section: {type: string}, teacher_id: {type: integer, description: user id of the homeroom teacher}, max_students: {type: integer}}
+    TeacherRequest:
+      type: object
+      required: [email, password, first_name, last_name]
+      properties: {email: {type: string}, password: {type: string}, first_name: {type: string}, last_name: {type: string}, department: {type: string}, specialization: {type: string}}
+    SubjectAssignment:
+      type: object
+      properties: {subject_ids: {type: array, items: {type: integer}}}
+    StudentRequest:
+      type: object
+      required: [email, password, first_name, last_name, class_id, student_number]
+      properties: {email: {type: string}, password: {type: string}, first_name: {type: string}, last_name: {type: string}, class_id: {type: integer}, student_number: {type: string}}
+    SubjectRequest:
+      type: object
+      required: [name, code]
+      properties: {name: {type: string}, code: {type: string}, description: {type: string}, credits: {type: integer}}
+    ParentRequest:
+      type: object
+      required: [email, password, first_name, last_name]
+      properties: {email: {type: string}, password: {type: string}, first_name: {type: string}, last_name: {type: string}, relationship: {type: string}, phone_number: {type: string}}
+    AttendanceRequest:
+      type: object
+      required: [class_id, records]
+      properties:
+        class_id: {type: integer}
+        date: {type: string, format: date, description: defaults to today}
+        records:
+          type: array
+          items:
+            type: object
+            required: [student_id, status]
+            properties: {student_id: {type: integer}, status: {type: string, enum: [present, absent, late, excused]}, remarks: {type: string}}
+    GradeRequest:
+      type: object
+      required: [student_id, subject_id, marks]
+      properties: {student_id: {type: integer}, subject_id: {type: integer}, marks: {type: integer, minimum: 1, maximum: 5}, term: {type: string, example: Q1}}
+    TimetableRequest:
+      type: object
+      required: [class_id, subject_id, teacher_id, day_of_week, start_time, end_time]
+      properties: {class_id: {type: integer}, subject_id: {type: integer}, teacher_id: {type: integer}, day_of_week: {type: integer, minimum: 0, maximum: 6, description: 0 = Sunday}, start_time: {type: string, example: '08:00'}, end_time: {type: string, example: '08:45'}, room_number: {type: string}}
+    AnnounceRequest:
+      type: object
+      required: [title, message]
+      properties: {title: {type: string}, message: {type: string}, role: {type: string, enum: [teacher, student, parent]}}
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: "Liveness probe"
+      description: "Roles: public"
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: "Sign in, returns a JWT"
+      description: "Roles: public"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/auth/profile:
+    get:
+      tags: [Auth]
+      summary: "Current user"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/auth/change-password:
+    post:
+      tags: [Auth]
+      summary: "Change own password"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChangePasswordRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: "Create an account (admin only; self-registration is closed)"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RegisterRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/news:
+    get:
+      tags: [News]
+      summary: "List news (public)"
+      description: "Roles: public"
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [News]
+      summary: "Publish news"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/NewsRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/news/{id}:
+    get:
+      tags: [News]
+      summary: "Get one news item (public)"
+      description: "Roles: public"
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [News]
+      summary: "Update news"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/NewsRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [News]
+      summary: "Delete news"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/users:
+    get:
+      tags: [Users]
+      summary: "Search users (?q=&role=&active=)"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: "Get user"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Users]
+      summary: "Update user / deactivate"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Users]
+      summary: "Delete user"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/users/{id}/reset-password:
+    post:
+      tags: [Users]
+      summary: "Reset a password"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/classes:
+    get:
+      tags: [Classes]
+      summary: "List classes"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Classes]
+      summary: "Create class"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ClassRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/classes/{id}:
+    get:
+      tags: [Classes]
+      summary: "Get class"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Classes]
+      summary: "Update class"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ClassRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Classes]
+      summary: "Delete class"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/teachers:
+    get:
+      tags: [Teachers]
+      summary: "List teachers"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Teachers]
+      summary: "Create teacher"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TeacherRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/teachers/{id}:
+    get:
+      tags: [Teachers]
+      summary: "Get teacher"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Teachers]
+      summary: "Update teacher"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Teachers]
+      summary: "Delete teacher"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/teachers/{id}/subjects:
+    get:
+      tags: [Teachers]
+      summary: "Subjects the teacher teaches"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Teachers]
+      summary: "Assign subjects to the teacher"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubjectAssignment'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/students:
+    get:
+      tags: [Students]
+      summary: "List students"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Students]
+      summary: "Create student"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StudentRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/students/{id}:
+    get:
+      tags: [Students]
+      summary: "Get student"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Students]
+      summary: "Update student"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Students]
+      summary: "Delete student"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/students/class/{classID}:
+    get:
+      tags: [Students]
+      summary: "Students of a class"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/subjects:
+    get:
+      tags: [Subjects]
+      summary: "List subjects"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Subjects]
+      summary: "Create subject"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubjectRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/subjects/{id}:
+    get:
+      tags: [Subjects]
+      summary: "Get subject"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    put:
+      tags: [Subjects]
+      summary: "Update subject"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Subjects]
+      summary: "Delete subject"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/parents:
+    post:
+      tags: [Parents]
+      summary: "Create parent"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ParentRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/parents/me/children:
+    get:
+      tags: [Parents]
+      summary: "Children of the signed-in parent"
+      description: "Roles: parent"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/parents/{id}/students/{studentID}:
+    post:
+      tags: [Parents]
+      summary: "Link parent and child"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: studentID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Parents]
+      summary: "Unlink"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+        - {name: studentID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance:
+    post:
+      tags: [Attendance]
+      summary: "Mark attendance for a class and date"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AttendanceRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/me:
+    get:
+      tags: [Attendance]
+      summary: "Own attendance report (?from=&to=)"
+      description: "Roles: student"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/me/export.csv:
+    get:
+      tags: [Export]
+      summary: "Own attendance as CSV"
+      description: "Roles: student"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Csv'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/student/{studentID}:
+    get:
+      tags: [Attendance]
+      summary: "Attendance report of a student (own / linked child / teacher / admin)"
+      description: "Roles: scoped"
+      security: [{bearer: []}]
+      parameters:
+        - {name: studentID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/student/{studentID}/export.csv:
+    get:
+      tags: [Export]
+      summary: "Student attendance as CSV"
+      description: "Roles: scoped"
+      security: [{bearer: []}]
+      parameters:
+        - {name: studentID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Csv'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/class/{classID}:
+    get:
+      tags: [Attendance]
+      summary: "Attendance sheet of a class and date"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/class/{classID}/stats:
+    get:
+      tags: [Attendance]
+      summary: "Class attendance statistics"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/attendance/class/{classID}/stats.csv:
+    get:
+      tags: [Export]
+      summary: "Class attendance statistics as CSV"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Csv'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades:
+    post:
+      tags: [Grades]
+      summary: "Record a mark (integer 1-5)"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GradeRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/{id}:
+    put:
+      tags: [Grades]
+      summary: "Change a mark"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GradeRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Grades]
+      summary: "Delete a mark"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/me:
+    get:
+      tags: [Grades]
+      summary: "Own marks report (?term=)"
+      description: "Roles: student"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/me/export.csv:
+    get:
+      tags: [Export]
+      summary: "Own marks as CSV"
+      description: "Roles: student"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Csv'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/student/{studentID}:
+    get:
+      tags: [Grades]
+      summary: "Marks report of a student"
+      description: "Roles: scoped"
+      security: [{bearer: []}]
+      parameters:
+        - {name: studentID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/student/{studentID}/export.csv:
+    get:
+      tags: [Export]
+      summary: "Student marks as CSV"
+      description: "Roles: scoped"
+      security: [{bearer: []}]
+      parameters:
+        - {name: studentID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Csv'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/class/{classID}/subject/{subjectID}:
+    get:
+      tags: [Grades]
+      summary: "Marks of a class in a subject"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+        - {name: subjectID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/grades/class/{classID}/subject/{subjectID}/export.csv:
+    get:
+      tags: [Export]
+      summary: "Class marks as CSV"
+      description: "Roles: admin, teacher"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+        - {name: subjectID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Csv'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/timetable:
+    post:
+      tags: [Timetable]
+      summary: "Create a lesson (conflict checked)"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TimetableRequest'}
+      responses:
+        '201': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/timetable/{id}:
+    put:
+      tags: [Timetable]
+      summary: "Update a lesson"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TimetableRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+    delete:
+      tags: [Timetable]
+      summary: "Delete a lesson"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/timetable/me:
+    get:
+      tags: [Timetable]
+      summary: "Own timetable"
+      description: "Roles: teacher, student"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/timetable/class/{classID}:
+    get:
+      tags: [Timetable]
+      summary: "Timetable of a class"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      parameters:
+        - {name: classID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/timetable/teacher/{teacherID}:
+    get:
+      tags: [Timetable]
+      summary: "Timetable of a teacher"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      parameters:
+        - {name: teacherID, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: "Own notifications"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: "Unread counter"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: "Mark all as read"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/notifications/{id}/read:
+    post:
+      tags: [Notifications]
+      summary: "Mark one as read"
+      description: "Roles: any"
+      security: [{bearer: []}]
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}
+  /api/notifications/announce:
+    post:
+      tags: [Notifications]
+      summary: "Send an announcement to a role"
+      description: "Roles: admin"
+      security: [{bearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AnnounceRequest'}
+      responses:
+        '200': {$ref: '#/components/responses/Envelope'}
+        default: {$ref: '#/components/responses/Error'}

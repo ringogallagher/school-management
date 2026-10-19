@@ -1,0 +1,43 @@
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Today</h1>
+  <p class="lede">{{longDay $.Today}}</p>
+</div>
+
+<div class="stats stats-5">
+  <div class="card stat"><span class="stat-label">Students</span><b class="stat-value">{{index .Counts "student"}}</b></div>
+  <div class="card stat"><span class="stat-label">Teachers</span><b class="stat-value">{{index .Counts "teacher"}}</b></div>
+  <div class="card stat"><span class="stat-label">Parents</span><b class="stat-value">{{index .Counts "parent"}}</b></div>
+  <div class="card stat"><span class="stat-label">Classes</span><b class="stat-value">{{.Classes}}</b></div>
+  <div class="card stat"><span class="stat-label">Subjects</span><b class="stat-value">{{.Subjects}}</b></div>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>Attendance still to mark today</h2>
+    {{if .Pending}}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Class</th><th></th></tr></thead>
+      <tbody>
+      {{range .Pending}}<tr><td>{{.ClassName}}</td><td class="num"><a href="/attendance?class={{.ClassID}}">Open sheet</a></td></tr>{{end}}
+      </tbody>
+    </table></div>
+    <form method="post" action="/admin/reminders/run">
+      <button class="btn btn-quiet">Remind their teachers now</button>
+    </form>
+    <p class="muted">Reminders are also sent automatically every afternoon.</p>
+    {{else}}
+    <p class="empty">Every class with lessons today has its attendance recorded.</p>
+    {{end}}
+  </section>
+  <section class="card">
+    <h2>Set up the school</h2>
+    <p>Add <a href="/admin/subjects">subjects</a> and <a href="/admin/teachers">teachers</a> first, then
+    <a href="/admin/classes">classes</a>, <a href="/admin/students">students</a> and their <a href="/admin/parents">parents</a>.
+    Finish with the <a href="/admin/timetable">timetable</a> so teachers can see their lessons.</p>
+    <p>Share what is going on with <a href="/admin/news">school news</a> on the home page.</p>
+  </section>
+</div>
+{{end}}
+{{end}}

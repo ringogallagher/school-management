@@ -1,0 +1,40 @@
+{{define "content"}}
+<div class="page-head">
+  <h1>{{if eq .Nav "children"}}My children{{else}}Today{{end}}</h1>
+  <p class="lede">{{longDay .Today}}</p>
+</div>
+{{range .Data}}
+<section class="card child">
+  <div class="child-head">
+    <h2>{{fullName .Child.FirstName .Child.LastName}}</h2>
+    <span class="muted">Class {{.ClassName}} · No. {{.Child.StudentNumber}}</span>
+  </div>
+  <div class="child-grid">
+    <div>
+      <div class="stat-inline">
+        {{if .Grades}}{{if .Grades.Grades}}<span class="mark mark-lg m{{band .Grades.OverallAverage}}">{{num .Grades.OverallAverage}}</span>{{else}}<span class="mark mark-lg m0">–</span>{{end}}
+        <span class="muted">average mark</span>{{end}}
+      </div>
+      {{if .Attendance}}
+      <div class="stat-inline">
+        <b class="{{if eq (pctBand .Attendance.Summary.Percentage) "low"}}pct-low{{end}}">{{num .Attendance.Summary.Percentage}}%</b>
+        <span class="muted">attendance, 30 days · {{.Attendance.Summary.Absent}} absences</span>
+      </div>
+      <div class="meter meter-{{pctBand .Attendance.Summary.Percentage}}"><i style="width: {{clamp .Attendance.Summary.Percentage}}%"></i></div>
+      {{end}}
+    </div>
+    <div>
+      <h3>Latest marks</h3>
+      {{if .Latest}}
+      <ul class="mark-list">
+        {{range .Latest}}<li><span class="mark m{{band .Marks}}">{{num .Marks}}</span><span class="ml-subject">{{.SubjectName}}</span><span class="ml-date">{{shortDate .CreatedAt}}</span></li>{{end}}
+      </ul>
+      {{else}}<p class="muted">No marks yet.</p>{{end}}
+    </div>
+  </div>
+  <p class="child-links"><a class="btn btn-sm" href="/students/{{.Child.ID}}/diary">Diary</a> <a class="btn btn-quiet btn-sm" href="/students/{{.Child.ID}}/grades">Marks</a> <a class="btn btn-quiet btn-sm" href="/students/{{.Child.ID}}/attendance">Attendance</a></p>
+</section>
+{{else}}
+<div class="card"><p class="empty">No children are linked to your account yet. Please contact the school office.</p></div>
+{{end}}
+{{end}}

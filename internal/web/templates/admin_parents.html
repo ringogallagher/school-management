@@ -1,0 +1,45 @@
+{{define "content"}}
+<h1>Parents</h1>
+<p class="lede">Parents see their children's grades and attendance and get notified about marks and absences.</p>
+{{if .Data.Parents}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Name</th><th>Email</th><th>Relationship</th><th>Phone</th><th class="num">Children</th></tr></thead>
+  <tbody>
+  {{range .Data.Parents}}
+  <tr><td><strong>{{.LastName}}</strong> {{.FirstName}}</td><td>{{.Email}}</td><td>{{.Relationship}}</td><td>{{.PhoneNumber}}</td><td class="num">{{.ChildCount}}</td></tr>
+  {{end}}
+  </tbody>
+</table></div>
+
+<details class="panel">
+  <summary>Link a parent to a student</summary>
+  <form method="post" action="/admin/parents/link" class="form-grid">
+    <label>Parent
+      <select name="parent_id" required>{{range .Data.Parents}}<option value="{{.ID}}">{{.LastName}} {{.FirstName}} ({{.Email}})</option>{{end}}</select>
+    </label>
+    <label>Student
+      <select name="student_id" required>{{range .Data.Students}}<option value="{{.ID}}">{{.LastName}} {{.FirstName}} ({{.StudentNumber}})</option>{{end}}</select>
+    </label>
+    <div><button class="btn">Link</button></div>
+  </form>
+</details>
+{{else}}<p class="empty">No parents yet.</p>{{end}}
+
+<details class="panel" {{if or .Error (not .Data.Parents)}}open{{end}}>
+  <summary>Add a parent</summary>
+  <form method="post" action="/admin/parents" class="form-grid">
+    <label>First name <input name="first_name" required></label>
+    <label>Last name <input name="last_name"></label>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Initial password <input type="password" name="password" minlength="8" required></label>
+    <label>Relationship
+      <select name="relationship"><option>mother</option><option>father</option><option>guardian</option></select>
+    </label>
+    <label>Phone <input type="tel" name="phone_number"></label>
+    <label>Child
+      <select name="student_id"><option value="">Link later</option>{{range .Data.Students}}<option value="{{.ID}}">{{.LastName}} {{.FirstName}} ({{.StudentNumber}})</option>{{end}}</select>
+    </label>
+    <div><button class="btn">Add parent</button></div>
+  </form>
+</details>
+{{end}}

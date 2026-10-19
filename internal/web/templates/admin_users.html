@@ -1,0 +1,70 @@
+{{define "user_table"}}
+{{with .Data}}
+{{if .Users}}
+<table>
+  <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {{range .Users}}
+  <tr class="{{if not .IsActive}}inactive{{end}}">
+    <td><strong>{{.LastName}}</strong> {{.FirstName}}</td>
+    <td>{{.Email}}</td>
+    <td>{{title (print .Role)}}</td>
+    <td>{{if .IsActive}}Active{{else}}Deactivated{{end}}</td>
+    <td class="num">
+      {{if ne .ID $.Data.Me}}
+      <form method="post" action="/admin/users/{{.ID}}/toggle" style="display:inline">
+        <input type="hidden" name="q" value="{{$.Data.Q}}"><input type="hidden" name="role" value="{{$.Data.Role}}">
+        <button class="link">{{if .IsActive}}Deactivate{{else}}Reactivate{{end}}</button>
+      </form>
+      <details class="mark-edit" style="display:inline-block;margin-left:.75rem">
+        <summary class="link" style="color:var(--pen);text-decoration:underline">Reset password</summary>
+        <div class="mark-pop" style="right:0;left:auto">
+          <form method="post" action="/admin/users/{{.ID}}/password" class="add-mark">
+            <input type="password" name="new_password" minlength="8" placeholder="New password" aria-label="New password for {{.Email}}" required style="width:11rem">
+            <button class="btn btn-sm">Set</button>
+          </form>
+        </div>
+      </details>
+      {{else}}<span class="muted">You</span>{{end}}
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{else}}<p class="empty">No accounts match.</p>{{end}}
+{{end}}
+{{end}}
+
+{{define "content"}}
+<h1>User accounts</h1>
+<p class="lede">Every login in the system. Deactivated people can't sign in, but their records are kept.</p>
+<form class="toolbar" method="get" action="/admin/users">
+  <label>Search
+    <input type="search" name="q" value="{{.Data.Q}}" placeholder="Name or email"
+           hx-get="/admin/users" hx-trigger="input changed delay:300ms, search" hx-target="#user-table" hx-include="closest form">
+  </label>
+  <label>Role
+    <select name="role" hx-get="/admin/users" hx-trigger="change" hx-target="#user-table" hx-include="closest form">
+      <option value="">Everyone</option>
+      <option value="admin" {{if eq .Data.Role "admin"}}selected{{end}}>Administrators</option>
+      <option value="teacher" {{if eq .Data.Role "teacher"}}selected{{end}}>Teachers</option>
+      <option value="student" {{if eq .Data.Role "student"}}selected{{end}}>Students</option>
+      <option value="parent" {{if eq .Data.Role "parent"}}selected{{end}}>Parents</option>
+    </select>
+  </label>
+  <noscript><button class="btn btn-quiet">Search</button></noscript>
+</form>
+<div id="user-table" class="table-wrap">{{template "user_table" .}}</div>
+
+<details class="panel" {{if .Error}}open{{end}}>
+  <summary>Add an administrator</summary>
+  <p class="muted">Teachers, students and parents are added on their own pages, because they also need a class or profile.</p>
+  <form method="post" action="/admin/users" class="form-grid">
+    <label>First name <input name="first_name" required></label>
+    <label>Last name <input name="last_name"></label>
+    <label>Email <input type="email" name="email" required></label>
+    <label>Password <input type="password" name="password" minlength="8" required></label>
+    <div><button class="btn">Add administrator</button></div>
+  </form>
+</details>
+{{end}}

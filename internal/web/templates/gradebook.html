@@ -1,0 +1,70 @@
+{{define "content"}}
+{{with .Data}}
+<h1>Gradebook</h1>
+{{if not .Classes}}
+<p class="empty">You don't have any classes yet.</p>
+{{else if not .Subject}}
+<p class="empty">No subjects exist yet. An administrator adds them under Subjects.</p>
+{{else}}
+<form class="toolbar" method="get" action="/gradebook" hx-get="/gradebook" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>Class
+    <select name="class">{{range .Classes}}<option value="{{.ID}}" {{if eq .ID $.Data.Class.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+  </label>
+  <label>Subject
+    <select name="subject">{{range .Subjects}}<option value="{{.ID}}" {{if eq .ID $.Data.Subject.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+  </label>
+  <label>Term
+    <input name="term" value="{{.Term}}" list="terms" size="8">
+    <datalist id="terms"><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option><option>Midterm</option><option>Final</option></datalist>
+  </label>
+  <noscript><button class="btn btn-quiet">Show</button></noscript>
+  <a class="btn btn-quiet btn-sm" hx-boost="false" download href="/gradebook.csv?class={{.Class.ID}}&subject={{.Subject.ID}}&term={{.Term}}">Export CSV</a>
+</form>
+
+{{if .Rows}}
+<p class="muted">Press a number to give that mark. Click an existing mark to change or remove it — you can edit marks you entered yourself.</p>
+<div class="table-wrap"><table class="gradebook">
+  <thead><tr><th>Student</th><th>{{.Subject.Name}}, {{.Term}}</th><th class="num">Average</th><th>Add mark</th></tr></thead>
+  <tbody>
+  {{range .Rows}}
+  <tr>
+    <td><a href="/students/{{.Student.ID}}/grades"><strong>{{.Student.LastName}}</strong> {{.Student.FirstName}}</a></td>
+    <td>
+      <div class="marks">
+        {{range .Grades}}
+        {{if or $.Data.IsAdmin (eq .RecordedBy $.Data.Me)}}
+        <details class="mark-edit">
+          <summary class="mark m{{band .Marks}}" title="Entered {{date .CreatedAt}}">{{num .Marks}}</summary>
+          <div class="mark-pop">
+            <form method="post" action="/gradebook/{{.ID}}" class="mark-set">
+              <input type="hidden" name="class_id" value="{{$.Data.Class.ID}}"><input type="hidden" name="subject_id" value="{{$.Data.Subject.ID}}"><input type="hidden" name="term" value="{{$.Data.Term}}">
+              {{range scale}}<button class="mark-btn m{{.}}" name="marks" value="{{.}}" aria-label="Change to {{.}}">{{.}}</button>{{end}}
+            </form>
+            <form method="post" action="/gradebook/{{.ID}}/delete">
+              <input type="hidden" name="class_id" value="{{$.Data.Class.ID}}"><input type="hidden" name="subject_id" value="{{$.Data.Subject.ID}}"><input type="hidden" name="term" value="{{$.Data.Term}}">
+              <button class="btn btn-sm btn-danger">Delete</button>
+            </form>
+          </div>
+        </details>
+        {{else}}
+        <span class="mark m{{band .Marks}}" title="Entered by another teacher">{{num .Marks}}</span>
+        {{end}}
+        {{else}}<span class="muted">–</span>{{end}}
+      </div>
+    </td>
+    <td class="num">{{if .Grades}}<span class="mark m{{band .Average}}">{{num .Average}}</span>{{end}}</td>
+    <td>
+      <form method="post" action="/gradebook" class="mark-set">
+        <input type="hidden" name="class_id" value="{{$.Data.Class.ID}}"><input type="hidden" name="subject_id" value="{{$.Data.Subject.ID}}"><input type="hidden" name="term" value="{{$.Data.Term}}">
+        <input type="hidden" name="student_id" value="{{.Student.ID}}">
+        {{range scale}}<button class="mark-btn m{{.}}" name="marks" value="{{.}}" aria-label="Give {{.}} to {{$.Data.Class.Name}} {{$.Data.Subject.Name}}">{{.}}</button>{{end}}
+      </form>
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">{{.Class.Name}} has no students yet.</p>{{end}}
+{{end}}
+{{end}}
+{{end}}

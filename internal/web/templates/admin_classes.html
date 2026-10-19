@@ -1,0 +1,42 @@
+{{define "content"}}
+<h1>Classes</h1>
+<p class="lede">Each class has a homeroom teacher, who takes attendance and receives reminders.</p>
+{{if .Data.Rows}}
+<div class="table-wrap"><table>
+  <thead><tr><th>Class</th><th>Level</th><th>Section</th><th>Homeroom teacher</th><th class="num">Students</th><th></th></tr></thead>
+  <tbody>
+  {{range .Data.Rows}}
+  <tr>
+    <td><strong>{{.Class.Name}}</strong></td><td>{{.Class.Level}}</td><td>{{.Class.Section}}</td><td>{{.Teacher}}</td>
+    <td class="num">{{.Students}} / {{.Class.MaxStudents}}</td>
+    <td class="num">
+      <a href="/admin/students?class={{.Class.ID}}">Students</a> ·
+      <a href="/admin/timetable?class={{.Class.ID}}">Timetable</a>
+      {{if eq .Students 0}}
+      <form method="post" action="/admin/classes/{{.Class.ID}}/delete" style="display:inline"> · <button class="link">Delete</button></form>
+      {{end}}
+    </td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}<p class="empty">No classes yet. Add the first one below.</p>{{end}}
+
+<details class="panel" {{if or .Error (not .Data.Rows)}}open{{end}}>
+  <summary>Add a class</summary>
+  {{if .Data.Teachers}}
+  <form method="post" action="/admin/classes" class="form-grid">
+    <label>Name <input name="name" placeholder="9A" required></label>
+    <label>Level <input name="level" placeholder="9" required></label>
+    <label>Section <input name="section" placeholder="A"></label>
+    <label>Homeroom teacher
+      <select name="teacher_id" required>
+        {{range .Data.Teachers}}<option value="{{.UserID}}">{{.LastName}} {{.FirstName}}</option>{{end}}
+      </select>
+    </label>
+    <label>Maximum students <input type="number" name="max_students" value="30" min="1" max="60"></label>
+    <div><button class="btn">Add class</button></div>
+  </form>
+  {{else}}<p>Add a <a href="/admin/teachers">teacher</a> first — every class needs a homeroom teacher.</p>{{end}}
+</details>
+{{end}}

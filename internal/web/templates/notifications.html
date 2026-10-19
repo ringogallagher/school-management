@@ -1,0 +1,26 @@
+{{define "badge"}}{{if gt . 0}}<span class="badge" aria-label="{{.}} unread">{{.}}</span>{{end}}{{end}}
+
+{{define "content"}}
+<h1>Notifications</h1>
+<div class="toolbar">
+  <span>
+    {{if .Data.UnreadOnly}}<a href="/notifications">Show all</a>{{else}}<a href="/notifications?filter=unread">Show unread only</a>{{end}}
+  </span>
+  <form method="post" action="/notifications/read-all"><button class="btn btn-quiet btn-sm">Mark all as read</button></form>
+</div>
+{{if .Data.Items}}
+<ul class="notes">
+  {{range .Data.Items}}
+  <li class="{{if not .IsRead}}unread{{end}}">
+    <span class="note-kind">{{notifLabel .Type}}</span>
+    <div><span class="note-title">{{.Title}}</span><p class="note-body">{{.Message}}</p></div>
+    <span class="note-when">{{ago .CreatedAt}}
+      {{if not .IsRead}}<form method="post" action="/notifications/{{.ID}}/read"><button class="link">Mark read</button></form>{{end}}
+    </span>
+  </li>
+  {{end}}
+</ul>
+{{else}}
+<p class="empty">{{if .Data.UnreadOnly}}You've read everything.{{else}}No notifications yet. Grades, absences and school announcements will appear here.{{end}}</p>
+{{end}}
+{{end}}

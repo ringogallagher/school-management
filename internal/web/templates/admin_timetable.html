@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1>Timetable</h1>
+{{with .Data}}
+{{if .Class}}
+<form class="toolbar" method="get" action="/admin/timetable" hx-get="/admin/timetable" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>Class
+    <select name="class">{{range .Classes}}<option value="{{.ID}}" {{if eq .ID $.Data.Class.ID}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+  </label>
+  <noscript><button class="btn btn-quiet">Show</button></noscript>
+</form>
+
+{{template "weekgrid" (dict "Week" .Week "Admin" true "ShowClass" false)}}
+
+<section class="panel">
+  <h2 style="margin-top:0">Add a lesson for {{.Class.Name}}</h2>
+  <p class="muted">The system refuses lessons that clash with another lesson of this class, the same teacher, or the same room.</p>
+  {{if and .Subjects .Teachers}}
+  <form method="post" action="/admin/timetable" class="form-grid">
+    <input type="hidden" name="class_id" value="{{.Class.ID}}">
+    <label>Day
+      <select name="day_of_week">
+        {{range $d := (seq 7)}}{{if $d}}<option value="{{$d}}" {{if eq (print $d) ($.Data.Form.Get "day_of_week")}}selected{{end}}>{{day $d}}</option>{{end}}{{end}}
+        <option value="0">Sunday</option>
+      </select>
+    </label>
+    <label>Starts <input type="time" name="start_time" value="{{or (.Form.Get "start_time") "08:00"}}" required></label>
+    <label>Ends <input type="time" name="end_time" value="{{or (.Form.Get "end_time") "08:45"}}" required></label>
+    <label>Subject
+      <select name="subject_id">{{range .Subjects}}<option value="{{.ID}}" {{if eq (print .ID) ($.Data.Form.Get "subject_id")}}selected{{end}}>{{.Name}}</option>{{end}}</select>
+    </label>
+    <label>Teacher
+      <select name="teacher_id">{{range .Teachers}}<option value="{{.ID}}" {{if eq (print .ID) ($.Data.Form.Get "teacher_id")}}selected{{end}}>{{.LastName}} {{.FirstName}}</option>{{end}}</select>
+    </label>
+    <label>Room <input name="room_number" value="{{.Form.Get "room_number"}}"></label>
+    <div><button class="btn">Add lesson</button></div>
+  </form>
+  {{else}}<p>Add <a href="/admin/subjects">subjects</a> and <a href="/admin/teachers">teachers</a> first.</p>{{end}}
+</section>
+{{else}}
+<p class="empty">Create a <a href="/admin/classes">class</a> first.</p>
+{{end}}
+{{end}}
+{{end}}

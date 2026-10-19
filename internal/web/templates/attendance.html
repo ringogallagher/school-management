@@ -1,0 +1,54 @@
+{{define "content"}}
+{{with .Data}}
+<h1>Attendance</h1>
+{{if not .Classes}}
+<p class="empty">You don't have any classes yet. Once you are a homeroom teacher or have a lesson in the timetable, your classes appear here.</p>
+{{else}}
+<form class="toolbar" method="get" action="/attendance" hx-get="/attendance" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>Class
+    <select name="class">
+      {{range .Classes}}<option value="{{.ID}}" {{if eq .ID $.Data.Class.ID}}selected{{end}}>{{.Name}}</option>{{end}}
+    </select>
+  </label>
+  <label>Date <input type="date" name="date" value="{{.Date}}" max="{{isoDate $.Today}}"></label>
+  <noscript><button class="btn btn-quiet">Show</button></noscript>
+  <a href="/attendance/stats?class={{.Class.ID}}">Statistics for {{.Class.Name}}</a>
+</form>
+
+{{if .Rows}}
+<p class="muted">{{if .Marked}}Recorded for {{.Marked}} of {{len .Rows}} students. Changes overwrite the saved sheet.{{else}}Not recorded yet. Everyone starts as present — change only the exceptions.{{end}}</p>
+<form method="post" action="/attendance">
+  <input type="hidden" name="class_id" value="{{.Class.ID}}">
+  <input type="hidden" name="date" value="{{.Date}}">
+  <div class="table-wrap"><table>
+    <thead><tr><th>No.</th><th>Student</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+    {{range .Rows}}
+    {{$id := .Student.ID}}{{$cur := .Status}}
+    <tr>
+      <td class="num muted">{{.Student.StudentNumber}}</td>
+      <td><strong>{{.Student.LastName}}</strong> {{.Student.FirstName}}<input type="hidden" name="student" value="{{$id}}"></td>
+      <td>
+        <fieldset class="seg" aria-label="Status for {{.Student.FirstName}} {{.Student.LastName}}">
+          {{range $.Data.Statuses}}
+          <input type="radio" id="s{{$id}}-{{.}}" name="status_{{$id}}" value="{{.}}" {{if eq . $cur}}checked{{end}}>
+          <label for="s{{$id}}-{{.}}" class="s-{{.}}" title="{{title (print .)}}">{{if eq (print .) "present"}}P{{else if eq (print .) "absent"}}A{{else if eq (print .) "late"}}L{{else}}E{{end}}</label>
+          {{end}}
+        </fieldset>
+      </td>
+      <td><input class="remarks" type="text" name="remarks_{{$id}}" value="{{.Remarks}}" aria-label="Note for {{.Student.FirstName}}" placeholder="optional"></td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table></div>
+  <div class="sheet-foot">
+    <button class="btn">Save attendance</button>
+    <span class="muted">P present · A absent · L late · E excused</span>
+  </div>
+</form>
+{{else}}
+<p class="empty">{{.Class.Name}} has no students yet.</p>
+{{end}}
+{{end}}
+{{end}}
+{{end}}

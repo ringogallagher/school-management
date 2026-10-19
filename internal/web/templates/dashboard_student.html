@@ -1,0 +1,71 @@
+{{define "content"}}
+{{with .Data}}
+<div class="page-head">
+  <h1>Hello, {{$.User.FirstName}}</h1>
+  <p class="lede">{{longDay $.Today}}</p>
+</div>
+
+<div class="stats">
+  {{if .Grades}}
+  <div class="card stat">
+    <span class="stat-label">Average mark</span>
+    {{if .Grades.Grades}}<b class="stat-value"><span class="mark mark-lg m{{band .Grades.OverallAverage}}">{{num .Grades.OverallAverage}}</span></b>
+    {{else}}<b class="stat-value muted">–</b>{{end}}
+    <a href="/my/grades">All marks</a>
+  </div>
+  {{end}}
+  {{if .Attendance}}
+  <div class="card stat">
+    <span class="stat-label">Attendance, last 30 days</span>
+    <b class="stat-value {{if eq (pctBand .Attendance.Summary.Percentage) "low"}}pct-low{{end}}">{{num .Attendance.Summary.Percentage}}%</b>
+    <div class="meter meter-{{pctBand .Attendance.Summary.Percentage}}"><i style="width: {{clamp .Attendance.Summary.Percentage}}%"></i></div>
+  </div>
+  {{end}}
+  <div class="card stat">
+    <span class="stat-label">Lessons today</span>
+    <b class="stat-value">{{len .Lessons}}</b>
+    <a href="/my/diary">Open diary</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>Lessons today</h2>
+    {{if .Lessons}}
+    <ol class="lesson-rows">
+      {{range .Lessons}}<li><time>{{.StartTime}}–{{.EndTime}}</time><span class="ls"><strong>{{.SubjectName}}</strong><small>{{.TeacherName}}</small></span><span class="lm room">{{if .RoomNumber}}Room {{.RoomNumber}}{{end}}</span></li>{{end}}
+    </ol>
+    {{else}}<p class="empty">No lessons today.</p>{{end}}
+  </section>
+  <section class="card">
+    <h2>Latest marks</h2>
+    {{if .Latest}}
+    <ul class="mark-list">
+      {{range .Latest}}<li><span class="mark m{{band .Marks}}">{{num .Marks}}</span><span class="ml-subject">{{.SubjectName}}</span><span class="ml-date">{{shortDate .CreatedAt}}</span></li>{{end}}
+    </ul>
+    {{else}}<p class="empty">No marks yet.</p>{{end}}
+  </section>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>School news</h2>
+    {{if .News}}
+    <ul class="news-mini">
+      {{range .News}}<li><a href="/news/{{.ID}}">{{.Title}}</a><time>{{shortDate .CreatedAt}}</time></li>{{end}}
+    </ul>
+    <p><a href="/">All news</a></p>
+    {{else}}<p class="empty">No news yet.</p>{{end}}
+  </section>
+  <section class="card">
+    <h2>Notifications</h2>
+    {{if .Recent}}
+    <ul class="notes">
+      {{range .Recent}}<li class="{{if not .IsRead}}unread{{end}}"><span class="note-kind">{{notifLabel .Type}}</span><div><span class="note-title">{{.Title}}</span><p class="note-body">{{.Message}}</p></div><span class="note-when">{{ago .CreatedAt}}</span></li>{{end}}
+    </ul>
+    <p><a href="/notifications">All notifications</a></p>
+    {{else}}<p class="empty">Nothing new.</p>{{end}}
+  </section>
+</div>
+{{end}}
+{{end}}

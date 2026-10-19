@@ -1,0 +1,48 @@
+{{define "content"}}
+{{with .Data}}
+<h1>{{if .Header.Self}}My marks{{else}}Marks{{if .Header.Name}} — {{.Header.Name}}{{end}}{{end}}</h1>
+{{if .Report}}
+{{$path := printf "/students/%d/grades" .Header.StudentID}}{{if .Header.Self}}{{$path = "/my/grades"}}{{end}}
+<form class="toolbar" method="get" action="{{$path}}" hx-get="{{$path}}" hx-trigger="change" hx-target="body" hx-push-url="true">
+  <label>Term
+    <select name="term">
+      <option value="" {{if eq .Term ""}}selected{{end}}>All terms</option>
+      <option {{if eq .Term "Q1"}}selected{{end}}>Q1</option><option {{if eq .Term "Q2"}}selected{{end}}>Q2</option>
+      <option {{if eq .Term "Q3"}}selected{{end}}>Q3</option><option {{if eq .Term "Q4"}}selected{{end}}>Q4</option>
+      <option {{if eq .Term "Midterm"}}selected{{end}}>Midterm</option><option {{if eq .Term "Final"}}selected{{end}}>Final</option>
+    </select>
+  </label>
+  {{if .Header.Self}}<a href="/my/diary">Diary</a>{{else}}<a href="/students/{{.Header.StudentID}}/diary">Diary</a> · <a href="/students/{{.Header.StudentID}}/attendance">Attendance</a>{{end}}
+  <a class="btn btn-quiet btn-sm" hx-boost="false" download href="{{if .Header.Self}}/my/grades.csv{{else}}/students/{{.Header.StudentID}}/grades.csv{{end}}?term={{.Term}}">Export CSV</a>
+</form>
+
+<div class="figures">
+  <div class="figure"><b>{{if .Report.Grades}}<span class="mark mark-lg m{{band .Report.OverallAverage}}">{{num .Report.OverallAverage}}</span>{{else}}–{{end}}</b><span>average mark</span></div>
+  <div class="figure"><b>{{len .Report.Grades}}</b><span>marks</span></div>
+  <div class="figure"><b>{{len .Report.Subjects}}</b><span>subjects</span></div>
+</div>
+
+{{if .Rows}}
+<div class="table-wrap"><table class="marks-table">
+  <thead><tr><th>Subject</th><th>Marks</th><th class="num">Average</th><th class="num">Final</th></tr></thead>
+  <tbody>
+  {{range .Rows}}
+  <tr>
+    <td><strong>{{.Name}}</strong></td>
+    <td><div class="marks">{{range .Marks}}<span class="mark m{{band .Marks}}" title="{{date .CreatedAt}} · {{.Term}}">{{num .Marks}}</span>{{end}}</div></td>
+    <td class="num">{{num .Average}}</td>
+    <td class="num">{{if .Final}}<span class="mark m{{.Final}}">{{.Final}}</span>{{end}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table></div>
+{{else}}
+<p class="empty">No marks yet{{if .Term}} for {{.Term}}{{end}}.</p>
+{{end}}
+{{end}}
+<ul class="legend legend-row">
+  <li><span class="mark m5">5</span> excellent</li><li><span class="mark m4">4</span> good</li><li><span class="mark m3">3</span> satisfactory</li><li><span class="mark m2">2</span> poor</li><li><span class="mark m1">1</span> very poor</li>
+</ul>
+<p class="muted">The final mark is the subject average rounded to a whole number (4.5 and above rounds up).</p>
+{{end}}
+{{end}}
